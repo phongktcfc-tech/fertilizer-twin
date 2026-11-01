@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="vi" class="dark">
 <head>
+  <script>
+  var d = document.createElement('div');
+  d.style.cssText = "position:fixed;top:0;left:0;background:red;color:white;z-index:999999;padding:20px;font-size:16px;white-space:pre-wrap;";
+  d.innerText = "JS_ERROR: " + e.message + " at " + e.filename + ":" + e.lineno + ":" + e.colno + "\n" + (e.error ? e.error.stack : "");
+  document.body ? document.body.appendChild(d) : window.addEventListener('DOMContentLoaded', function() { document.body.appendChild(d); });
+});
+</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Digital Twin Dây Chuyền Sản Xuất Phân Bón NPK - 3D SCADA</title>
@@ -892,76 +899,6 @@
     let camTargetPos = new THREE.Vector3(0, 16, 36);
     let camTargetLookAt = new THREE.Vector3(1.0, 3.2, 0);
     let selectedCardIndex = null; // Start with overview & auto-rotate // Card 3 (Máy tạo hạt vê viên) starts active
-
-    // Station Coordinates (Tightened layout X = -21 to X = 28)
-    const STATIONS = {
-      cum1: { name: "Cụm 1: Phễu nạp liệu & Cân định lượng", pos: new THREE.Vector3(-20.0, 3.8, 0), cam: new THREE.Vector3(-20.0, 8.0, 13.5) },
-      cum2: { name: "Cụm 2: Cụm nghiền & Trộn liên tục", pos: new THREE.Vector3(-13.0, 3.6, 0), cam: new THREE.Vector3(-13.0, 7.5, 13.5) },
-      cum3: { name: "Cụm 3: Thùng vê viên tạo hạt (MVV)", pos: new THREE.Vector3(-5.0, 3.2, 0), cam: new THREE.Vector3(-5.0, 7.5, 13.5) },
-      cum4: { name: "Cụm 4: Lò đốt & Thùng sấy quay", pos: new THREE.Vector3(6.5, 4.0, 0), cam: new THREE.Vector3(6.5, 8.5, 15.0) },
-      cum5: { name: "Cụm 5: Thùng làm nguội", pos: new THREE.Vector3(17.5, 3.2, 0), cam: new THREE.Vector3(17.5, 7.5, 13.5) },
-      cum6: { name: "Cụm 6: Sàng rung phân loại 2 lớp", pos: new THREE.Vector3(24.2, 3.8, 0), cam: new THREE.Vector3(24.2, 8.0, 14.0) },
-      cum7: { name: "Cụm 7: Silo đóng bao thành phẩm", pos: new THREE.Vector3(29.8, 5.0, 0), cam: new THREE.Vector3(29.8, 9.5, 15.0) }
-    };
-
-    // Mapping 6 KPI Cards to 3D Equipment coordinates
-    const STEP_EQUIPMENT_MAP = {
-      1: { name: "Lò hơi & Nhiên liệu cấp nhiệt", target: new THREE.Vector3(1.5, 3.5, 2.5), cam: new THREE.Vector3(1.5, 8.5, 15.0) },
-      2: { name: "Phễu nạp nguyên liệu & Cân", target: new THREE.Vector3(-20.0, 3.8, 0), cam: new THREE.Vector3(-20.0, 8.0, 13.5) },
-      3: { name: "Máy tạo hạt thùng quay (Vê viên)", target: new THREE.Vector3(-5.0, 3.2, 0), cam: new THREE.Vector3(-5.0, 7.5, 13.5) },
-      4: { name: "Đầu vào Thùng sấy quay", target: new THREE.Vector3(3.0, 3.8, 0), cam: new THREE.Vector3(3.0, 8.0, 14.5) },
-      5: { name: "Cửa ra sấy & Thùng làm nguội", target: new THREE.Vector3(17.5, 3.2, 0), cam: new THREE.Vector3(17.5, 7.5, 13.5) },
-      6: { name: "Sàng rây 2 lớp & Silo đầu ra", target: new THREE.Vector3(26.5, 4.0, 0), cam: new THREE.Vector3(26.5, 8.5, 15.0) }
-    };
-
-    function onStepCardClick(cardIndex) {
-      if (selectedCardIndex === cardIndex) {
-        // Toggle off - return to overview
-        selectedCardIndex = null;
-        for (let i = 1; i <= 6; i++) {
-          const el = document.getElementById('stepCard' + i);
-          if (el) el.classList.remove('active');
-        }
-        if (highlightSpotLight) highlightSpotLight.visible = false;
-        if (highlightRing) highlightRing.visible = false;
-
-        camTargetPos.set(0, 15, 34);
-        camTargetLookAt.set(0, 3.2, 0);
-        isCamLerping = true;
-
-        document.querySelectorAll('.cam-btn').forEach(b => {
-          b.classList.remove('bg-cyan-900/40', 'text-cyan-300', 'font-bold');
-        });
-        const ovBtn = document.querySelector('.cam-btn');
-        if (ovBtn) ovBtn.classList.add('bg-cyan-900/40', 'text-cyan-300', 'font-bold');
-        return;
-      }
-
-      selectedCardIndex = cardIndex;
-      for (let i = 1; i <= 6; i++) {
-        const el = document.getElementById('stepCard' + i);
-        if (el) {
-          if (i === cardIndex) el.classList.add('active');
-          else el.classList.remove('active');
-        }
-      }
-
-      const info = STEP_EQUIPMENT_MAP[cardIndex];
-      if (info) {
-        if (highlightSpotLight) {
-          highlightSpotLight.position.set(info.target.x, info.target.y + 11, info.target.z + 4);
-          highlightSpotLight.target.position.copy(info.target);
-          highlightSpotLight.visible = true;
-        }
-        if (highlightRing) {
-          highlightRing.position.set(info.target.x, 0.05, info.target.z);
-          highlightRing.visible = true;
-        }
-        camTargetPos.copy(info.cam);
-        camTargetLookAt.copy(info.target);
-        isCamLerping = true;
-      }
-    }
 
         function switchTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
