@@ -2,12 +2,10 @@
 <html lang="vi" class="dark">
 <head>
   <script>
-  var d = document.createElement('div');
-  d.style.cssText = "position:fixed;top:0;left:0;background:red;color:white;z-index:999999;padding:20px;font-size:16px;white-space:pre-wrap;";
-  d.innerText = "JS_ERROR: " + e.message + " at " + e.filename + ":" + e.lineno + ":" + e.colno + "\n" + (e.error ? e.error.stack : "");
-  document.body ? document.body.appendChild(d) : window.addEventListener('DOMContentLoaded', function() { document.body.appendChild(d); });
-});
-</script>
+    window.addEventListener('error', function(e) {
+      console.error('JS_ERROR:', e.message, e.filename, e.lineno);
+    });
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Digital Twin Dây Chuyền Sản Xuất Phân Bón NPK - 3D SCADA</title>
@@ -2776,8 +2774,7 @@
         const loadEl = document.getElementById(loadingId);
         if (loadEl) loadEl.remove();
 
-        const formattedReply = marked ? marked.parse(data.reply) : data.reply.replace(/
-/g, '<br>');
+        const formattedReply = marked ? marked.parse(data.reply) : data.reply.split('\n').join('<br>');
 
         const aiMsgHtml = `
           <div class="flex items-start gap-2">
