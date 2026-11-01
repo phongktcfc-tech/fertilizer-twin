@@ -1211,26 +1211,26 @@
     }
 
     // ==================== THREE.JS EXPERT DIGITAL TWIN ENGINE ====================
-    // Equipment & Station Coordinates matching exact pipeline:
-    // Phễu nạp -> Băng tải -> Máy vê viên -> (cạnh máy vê viên có Lò đốt) -> Băng tải vào sấy -> Máy sấy -> Băng tải ra sấy -> Sàng rây -> Cụm đóng bao
+    // Clean Technical SCADA Digital Twin:
+    // 1. Phễu nạp liệu -> 2. Băng tải -> 3. Máy vê viên -> 4. Lò đốt (cạnh vê viên) -> 5. Băng tải vào sấy -> 6. Máy sấy -> 7. Băng tải ra sấy -> 8. Sàng rây -> 9. Cụm đóng bao
     const STATIONS = {
-      cum1: { name: "1. Phễu nạp liệu", pos: new THREE.Vector3(-16.0, 3.5, 0), cam: new THREE.Vector3(-16.0, 8.0, 13.0) },
-      cum2: { name: "2. Máy vê viên (tạo hạt)", pos: new THREE.Vector3(-7.5, 3.2, 0), cam: new THREE.Vector3(-7.5, 7.5, 12.5) },
-      cum3: { name: "3. Lò đốt nhiệt (cạnh máy vê viên)", pos: new THREE.Vector3(-7.0, 3.0, 4.0), cam: new THREE.Vector3(-7.0, 7.5, 14.5) },
-      cum4: { name: "4. Băng tải vào máy sấy", pos: new THREE.Vector3(-3.8, 3.2, 0), cam: new THREE.Vector3(-3.8, 7.0, 11.5) },
-      cum5: { name: "5. Máy sấy thùng quay", pos: new THREE.Vector3(2.0, 3.5, 0), cam: new THREE.Vector3(2.0, 8.5, 15.0) },
-      cum6: { name: "6. Băng tải ra sấy & Sàng rây rung", pos: new THREE.Vector3(12.5, 3.5, 0), cam: new THREE.Vector3(12.5, 7.5, 13.0) },
-      cum7: { name: "7. Cụm đóng bao thành phẩm", pos: new THREE.Vector3(18.5, 4.0, 0), cam: new THREE.Vector3(18.5, 8.5, 13.5) }
+      cum1: { name: "1. Phễu nạp liệu", pos: new THREE.Vector3(-15.0, 3.2, 0), cam: new THREE.Vector3(-15.0, 7.5, 12.0) },
+      cum2: { name: "2. Máy vê viên (tạo hạt)", pos: new THREE.Vector3(-6.8, 3.0, 0), cam: new THREE.Vector3(-6.8, 7.0, 11.5) },
+      cum3: { name: "3. Lò đốt nhiệt (cạnh máy vê viên)", pos: new THREE.Vector3(-6.8, 2.5, 3.4), cam: new THREE.Vector3(-6.8, 6.8, 13.5) },
+      cum4: { name: "4. Băng tải vào máy sấy", pos: new THREE.Vector3(-3.8, 3.0, 0), cam: new THREE.Vector3(-3.8, 6.5, 10.5) },
+      cum5: { name: "5. Máy sấy thùng quay", pos: new THREE.Vector3(2.0, 3.2, 0), cam: new THREE.Vector3(2.0, 8.0, 14.5) },
+      cum6: { name: "6. Sàng rây phân loại", pos: new THREE.Vector3(11.5, 3.2, 0), cam: new THREE.Vector3(11.5, 7.0, 11.5) },
+      cum7: { name: "7. Cụm đóng bao thành phẩm", pos: new THREE.Vector3(15.2, 3.5, 0), cam: new THREE.Vector3(15.2, 7.8, 12.5) }
     };
 
     // Mapping 6 KPI Cards to 3D Equipment coordinates
     const STEP_EQUIPMENT_MAP = {
-      1: { name: "Lò đốt & Nhiên liệu cấp nhiệt", target: new THREE.Vector3(-7.0, 3.0, 4.0), cam: new THREE.Vector3(-7.0, 7.5, 14.5) },
-      2: { name: "Phễu nạp liệu & Cân định lượng", target: new THREE.Vector3(-16.0, 3.5, 0), cam: new THREE.Vector3(-16.0, 8.0, 13.0) },
-      3: { name: "Máy tạo hạt (vê viên)", target: new THREE.Vector3(-7.5, 3.2, 0), cam: new THREE.Vector3(-7.5, 7.5, 12.5) },
-      4: { name: "Vào máy sấy & Khí nóng cấp", target: new THREE.Vector3(-3.8, 3.4, 0), cam: new THREE.Vector3(-3.8, 7.0, 12.0) },
-      5: { name: "Cửa ra máy sấy", target: new THREE.Vector3(6.8, 2.5, 0), cam: new THREE.Vector3(6.8, 7.0, 12.5) },
-      6: { name: "Sàng rây & Cụm đóng bao", target: new THREE.Vector3(15.5, 3.8, 0), cam: new THREE.Vector3(15.5, 8.0, 14.0) }
+      1: { name: "Lò đốt & Nhiên liệu cấp nhiệt", target: new THREE.Vector3(-6.8, 2.5, 3.4), cam: new THREE.Vector3(-6.8, 6.8, 13.5) },
+      2: { name: "Phễu nạp liệu & Cân định lượng", target: new THREE.Vector3(-15.0, 3.2, 0), cam: new THREE.Vector3(-15.0, 7.5, 12.0) },
+      3: { name: "Máy tạo hạt (vê viên)", target: new THREE.Vector3(-6.8, 3.0, 0), cam: new THREE.Vector3(-6.8, 7.0, 11.5) },
+      4: { name: "Vào máy sấy & Khí nóng cấp", target: new THREE.Vector3(-3.2, 3.2, 0), cam: new THREE.Vector3(-3.2, 6.8, 11.0) },
+      5: { name: "Cửa ra máy sấy", target: new THREE.Vector3(6.6, 2.4, 0), cam: new THREE.Vector3(6.6, 6.5, 11.5) },
+      6: { name: "Sàng rây & Cụm đóng bao", target: new THREE.Vector3(13.2, 3.5, 0), cam: new THREE.Vector3(13.2, 7.5, 13.0) }
     };
 
     let furnaceFireLight = null;
@@ -1244,8 +1244,8 @@
       threeScene.background = new THREE.Color(0x0c1a32);
       threeScene.fog = new THREE.FogExp2(0x0c1a32, 0.007);
 
-      threeCamera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1500);
-      threeCamera.position.set(0, 16, 36);
+      threeCamera = new THREE.PerspectiveCamera(38, width / height, 0.1, 1500);
+      threeCamera.position.set(0, 15, 35);
 
       threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
       threeRenderer.setSize(width, height);
@@ -1258,17 +1258,17 @@
       threeControls.enableDamping = true;
       threeControls.dampingFactor = 0.05;
       threeControls.maxPolarAngle = Math.PI / 2 - 0.04;
-      threeControls.target.set(1.0, 3.0, 0);
+      threeControls.target.set(0.5, 2.8, 0);
 
       // Camera auto-rotation setup
       threeControls.autoRotate = true;
       threeControls.autoRotateSpeed = 0.45; // Gentle slow rotation around model
 
       // High-Clarity Industrial Lighting
-      const ambientLight = new THREE.AmbientLight(0xffffff, 1.3);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.35);
       threeScene.add(ambientLight);
 
-      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e293b, 1.1);
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e293b, 1.15);
       hemiLight.position.set(0, 50, 0);
       threeScene.add(hemiLight);
 
@@ -1279,29 +1279,29 @@
       dirLight1.shadow.mapSize.height = 2048;
       threeScene.add(dirLight1);
 
-      const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.8);
+      const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.7);
       dirLight2.position.set(-30, 25, -25);
       threeScene.add(dirLight2);
 
       // Floor Grid
-      const grid = new THREE.GridHelper(70, 70, 0x38bdf8, 0x1e3a5f);
+      const grid = new THREE.GridHelper(60, 60, 0x38bdf8, 0x1e3a5f);
       grid.position.y = 0.02;
       threeScene.add(grid);
 
       const floorMat = new THREE.MeshStandardMaterial({ color: 0x071120, roughness: 0.9, metalness: 0.1 });
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), floorMat);
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(75, 75), floorMat);
       floor.rotation.x = -Math.PI / 2;
       floor.receiveShadow = true;
       threeScene.add(floor);
 
       // Highlight SpotLight & Ring
-      highlightSpotLight = new THREE.SpotLight(0x38bdf8, 6.0, 32, Math.PI / 6, 0.35, 1.2);
+      highlightSpotLight = new THREE.SpotLight(0x38bdf8, 5.5, 28, Math.PI / 6, 0.35, 1.2);
       highlightSpotLight.castShadow = true;
       highlightSpotLight.visible = false;
       threeScene.add(highlightSpotLight);
       threeScene.add(highlightSpotLight.target);
 
-      const ringGeom = new THREE.RingGeometry(2.2, 2.5, 36);
+      const ringGeom = new THREE.RingGeometry(2.0, 2.3, 36);
       const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
       highlightRing = new THREE.Mesh(ringGeom, ringMat);
       highlightRing.rotation.x = -Math.PI / 2;
@@ -1310,14 +1310,13 @@
       threeScene.add(highlightRing);
 
       // Materials library
-      const steelDark = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
+      const steelDark = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.35 });
       const steelSilver = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85, roughness: 0.25 });
-      const paintTeal = new THREE.MeshStandardMaterial({ color: 0x0891b2, metalness: 0.4, roughness: 0.4 });
-      const paintYellow = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.3, roughness: 0.45 });
-      const paintOrange = new THREE.MeshStandardMaterial({ color: 0xea580c, metalness: 0.3, roughness: 0.4 });
+      const paintTeal = new THREE.MeshStandardMaterial({ color: 0x0891b2, metalness: 0.45, roughness: 0.35 });
+      const paintYellow = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.35, roughness: 0.4 });
+      const paintOrange = new THREE.MeshStandardMaterial({ color: 0xea580c, metalness: 0.35, roughness: 0.35 });
       const brickFurnace = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.8, metalness: 0.15 });
       const rubberBelt = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9, metalness: 0.1 });
-      const pipeMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.6, roughness: 0.4 });
 
       // Helper: Conveyor Belt Builder
       function createConveyorBelt(startP, endP, name, particleColor) {
@@ -1327,96 +1326,78 @@
         const mid = new THREE.Vector3().addVectors(startP, endP).multiplyScalar(0.5);
 
         // Bed frame
-        const bedGeom = new THREE.BoxGeometry(0.85, 0.16, len);
+        const bedGeom = new THREE.BoxGeometry(0.75, 0.14, len);
         const bed = new THREE.Mesh(bedGeom, rubberBelt);
         bed.position.copy(mid);
         bed.lookAt(endP);
         group.add(bed);
 
         // Steel side rails
-        const railGeom = new THREE.BoxGeometry(0.06, 0.22, len);
+        const railGeom = new THREE.BoxGeometry(0.05, 0.2, len);
         const railL = new THREE.Mesh(railGeom, steelSilver);
-        railL.position.set(-0.44, 0.08, 0);
+        railL.position.set(-0.38, 0.07, 0);
         const railR = new THREE.Mesh(railGeom, steelSilver);
-        railR.position.set(0.44, 0.08, 0);
+        railR.position.set(0.38, 0.07, 0);
         bed.add(railL);
         bed.add(railR);
 
-        // Support legs at middle
-        const legGeom = new THREE.CylinderGeometry(0.08, 0.08, mid.y, 8);
-        const leg1 = new THREE.Mesh(legGeom, steelDark);
-        leg1.position.set(mid.x, mid.y / 2, mid.z + 0.35);
-        const leg2 = new THREE.Mesh(legGeom, steelDark);
-        leg2.position.set(mid.x, mid.y / 2, mid.z - 0.35);
-        group.add(leg1);
-        group.add(leg2);
-
-        // End pulleys
-        const pulGeom = new THREE.CylinderGeometry(0.24, 0.24, 0.95, 16);
-        pulGeom.rotateZ(Math.PI / 2);
-        const p1 = new THREE.Mesh(pulGeom, steelDark);
-        p1.position.copy(startP);
-        p1.lookAt(endP);
-        const p2 = new THREE.Mesh(pulGeom, steelDark);
-        p2.position.copy(endP);
-        p2.lookAt(startP);
-        group.add(p1);
-        group.add(p2);
+        // Support leg at middle
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, mid.y, 8), steelDark);
+        leg.position.set(mid.x, mid.y / 2, mid.z);
+        group.add(leg);
 
         threeScene.add(group);
 
         // Particle dynamics along belt
         const pColor = particleColor || 0x22c55e;
         const pMat = new THREE.MeshStandardMaterial({ color: pColor, roughness: 0.6 });
-        const pGeom = new THREE.DodecahedronGeometry(0.1, 0);
+        const pGeom = new THREE.DodecahedronGeometry(0.09, 0);
         const particles = [];
         const numP = Math.floor(len * 4.5);
         for (let i = 0; i < numP; i++) {
           const pm = new THREE.Mesh(pGeom, pMat);
           const prog = i / numP;
           const pos = new THREE.Vector3().lerpVectors(startP, endP, prog);
-          pos.y += 0.18;
-          pos.z += (Math.random() - 0.5) * 0.4;
+          pos.y += 0.16;
+          pos.z += (Math.random() - 0.5) * 0.3;
           pm.position.copy(pos);
           threeScene.add(pm);
-          particles.push({ mesh: pm, progress: prog, start: startP, end: endP, lateralOffset: (Math.random() - 0.5) * 0.35 });
+          particles.push({ mesh: pm, progress: prog, start: startP, end: endP, lateralOffset: (Math.random() - 0.5) * 0.28 });
         }
         conveyorSystems.push({ length: len, particles: particles });
       }
 
-      // ================= 1. PHỄU NẠP LIỆU (X = -16.0, Z = 0) =================
+      // ================= 1. PHỄU NẠP LIỆU (X = -15.0, Z = 0) =================
       const hopperGrp = new THREE.Group();
-      hopperGrp.position.set(-16.0, 0, 0);
+      hopperGrp.position.set(-15.0, 0, 0);
 
       // Support 4 structural legs
-      const legMat = steelDark;
-      const legG = new THREE.BoxGeometry(0.18, 4.8, 0.18);
-      [[-1.4, -1.1], [1.4, -1.1], [-1.4, 1.1], [1.4, 1.1]].forEach(pos => {
-        const l = new THREE.Mesh(legG, legMat);
-        l.position.set(pos[0], 2.4, pos[1]);
+      const legG = new THREE.BoxGeometry(0.16, 4.4, 0.16);
+      [[-1.2, -1.0], [1.2, -1.0], [-1.2, 1.0], [1.2, 1.0]].forEach(pos => {
+        const l = new THREE.Mesh(legG, steelDark);
+        l.position.set(pos[0], 2.2, pos[1]);
         hopperGrp.add(l);
       });
 
-      // Upper Hopper Body (Inverted pyramid)
-      const topBox = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.4, 2.6), paintYellow);
-      topBox.position.set(0, 4.6, 0);
+      // Upper Hopper Body
+      const topBox = new THREE.Mesh(new THREE.BoxGeometry(2.8, 1.2, 2.4), paintYellow);
+      topBox.position.set(0, 4.2, 0);
       hopperGrp.add(topBox);
 
-      const coneG = new THREE.CylinderGeometry(1.6, 0.35, 1.8, 4);
+      const coneG = new THREE.CylinderGeometry(1.4, 0.32, 1.6, 4);
       coneG.rotateY(Math.PI / 4);
       const cone = new THREE.Mesh(coneG, paintYellow);
-      cone.position.set(0, 3.0, 0);
+      cone.position.set(0, 2.8, 0);
       hopperGrp.add(cone);
 
       // Raw fertilizer contents at top
-      const pileMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9 });
-      const pile = new THREE.Mesh(new THREE.ConeGeometry(1.3, 0.6, 8), pileMat);
-      pile.position.set(0, 5.2, 0);
+      const pile = new THREE.Mesh(new THREE.ConeGeometry(1.1, 0.5, 8), new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9 }));
+      pile.position.set(0, 4.7, 0);
       hopperGrp.add(pile);
 
       // Feed chute out to conveyor
-      const chute = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.8, 8), steelSilver);
-      chute.position.set(1.0, 2.0, 0);
+      const chute = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.8, 8), steelSilver);
+      chute.position.set(0.9, 1.9, 0);
       chute.rotation.z = -Math.PI / 4;
       hopperGrp.add(chute);
 
@@ -1424,241 +1405,224 @@
 
       // ================= 2. BĂNG TẢI: PHỄU SANG MÁY VÊ VIÊN =================
       createConveyorBelt(
-        new THREE.Vector3(-14.8, 1.8, 0),
-        new THREE.Vector3(-10.2, 3.8, 0),
+        new THREE.Vector3(-13.8, 1.8, 0),
+        new THREE.Vector3(-9.2, 3.4, 0),
         "Băng tải nạp",
-        0x64748b // Raw mixed mineral color
+        0x64748b // Raw mineral grey
       );
 
-      // ================= 3. MÁY VÊ VIÊN TẠO HẠT (X = -7.5, Z = 0) =================
+      // ================= 3. MÁY VÊ VIÊN TẠO HẠT (X = -6.8, Z = 0) =================
       const granGrp = new THREE.Group();
-      granGrp.position.set(-7.5, 2.8, 0);
+      granGrp.position.set(-6.8, 2.6, 0);
 
       // Granulator drum (inclined rotary cylinder)
-      const granDrumG = new THREE.CylinderGeometry(1.35, 1.35, 4.4, 24, 1, true);
+      const granDrumG = new THREE.CylinderGeometry(1.3, 1.3, 4.2, 24, 1, false);
       granDrumG.rotateZ(Math.PI / 2);
       const granDrum = new THREE.Mesh(granDrumG, paintTeal);
-      granDrum.rotation.z = -0.06; // slight tilt
+      granDrum.rotation.z = -0.06; // tilt
       granGrp.add(granDrum);
       rotatingDrums.push(granDrum);
 
-      // Riding rings and gear
-      const ringG = new THREE.TorusGeometry(1.42, 0.1, 12, 32);
+      // Riding rings
+      const ringG = new THREE.TorusGeometry(1.38, 0.1, 12, 32);
       ringG.rotateY(Math.PI / 2);
-      [-1.3, 1.3].forEach(x => {
+      [-1.2, 1.2].forEach(x => {
         const r = new THREE.Mesh(ringG, steelSilver);
         r.position.x = x;
         granDrum.add(r);
       });
-      const granGear = new THREE.Mesh(new THREE.TorusGeometry(1.48, 0.14, 16, 32), steelDark);
+      const granGear = new THREE.Mesh(ringG, steelDark);
       granGear.position.x = 0;
       granDrum.add(granGear);
 
       // Cradle base support
-      const granBase = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.5, 2.2), steelDark);
-      granBase.position.set(0, -1.8, 0);
+      const granBase = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.45, 2.0), steelDark);
+      granBase.position.set(0, -1.6, 0);
       granGrp.add(granBase);
-
-      // Overhead binder spray pipe
-      const sprayPipe = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 4.2, 8), steelSilver);
-      sprayPipe.rotation.z = Math.PI / 2;
-      sprayPipe.position.set(0, 1.7, 0);
-      granGrp.add(sprayPipe);
 
       threeScene.add(granGrp);
 
-      // ================= 4. LÒ ĐỐT NHIỆT (CẠNH MÁY VÊ VIÊN) (X = -7.0, Z = 4.0) =================
+      // ================= 4. LÒ ĐỐT NHIỆT (CẠNH MÁY VÊ VIÊN) (X = -6.8, Z = 3.4) =================
       const furnaceGrp = new THREE.Group();
-      furnaceGrp.position.set(-7.0, 2.1, 4.0);
+      furnaceGrp.position.set(-6.8, 1.9, 3.4);
 
-      // Main brick furnace chamber
-      const fBox = new THREE.Mesh(new THREE.BoxGeometry(3.2, 4.0, 2.6), brickFurnace);
+      // Refractory brick furnace chamber
+      const fBox = new THREE.Mesh(new THREE.BoxGeometry(2.8, 3.6, 2.4), brickFurnace);
       furnaceGrp.add(fBox);
 
       // Steel reinforcement corner columns
-      [[-1.6, -1.3], [1.6, -1.3], [-1.6, 1.3], [1.6, 1.3]].forEach(c => {
-        const col = new THREE.Mesh(new THREE.BoxGeometry(0.15, 4.1, 0.15), steelDark);
+      [[-1.4, -1.2], [1.4, -1.2], [-1.4, 1.2], [1.4, 1.2]].forEach(c => {
+        const col = new THREE.Mesh(new THREE.BoxGeometry(0.12, 3.7, 0.12), steelDark);
         col.position.set(c[0], 0, c[1]);
         furnaceGrp.add(col);
       });
 
-      // Burner burner gun & fuel supply on front
-      const burnerGun = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.35, 1.0, 16), steelDark);
+      // Burner gun
+      const burnerGun = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.3, 0.9, 16), steelDark);
       burnerGun.rotation.x = Math.PI / 2;
-      burnerGun.position.set(0, -0.4, 1.5);
+      burnerGun.position.set(0, -0.4, 1.3);
       furnaceGrp.add(burnerGun);
 
-      // Fire inspection viewing window
-      const winMat = new THREE.MeshBasicMaterial({ color: 0xff7700 });
-      const win = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 0.1), winMat);
-      win.position.set(0, 0.5, 1.32);
+      // Inspection window & fire glow
+      const win = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.1), new THREE.MeshBasicMaterial({ color: 0xff7700 }));
+      win.position.set(0, 0.4, 1.22);
       furnaceGrp.add(win);
 
-      // Internal Flame Fire Glow Light
-      furnaceFireLight = new THREE.PointLight(0xff5500, 3.2, 14);
-      furnaceFireLight.position.set(0, 0.5, 1.4);
+      furnaceFireLight = new THREE.PointLight(0xff5500, 3.0, 12);
+      furnaceFireLight.position.set(0, 0.4, 1.3);
       furnaceGrp.add(furnaceFireLight);
 
-      // HOT AIR DUCT CONNECTING FURNACE TO DRYER INLET
-      // From furnace top (-7.0, 3.8, 3.0) curving into dryer inlet at (-3.2, 4.0, 0)
+      // HOT GAS DUCT DIRECTLY INTO DRYER INLET HEAD
       const ductCurve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(-7.0, 4.0, 3.0),
-        new THREE.Vector3(-5.5, 4.8, 2.0),
-        new THREE.Vector3(-4.0, 4.4, 0.8),
-        new THREE.Vector3(-3.2, 4.0, 0)
+        new THREE.Vector3(-6.8, 3.5, 2.5),
+        new THREE.Vector3(-5.0, 4.0, 1.5),
+        new THREE.Vector3(-3.6, 3.6, 0.6),
+        new THREE.Vector3(-2.8, 3.4, 0)
       ]);
-      const ductGeom = new THREE.TubeGeometry(ductCurve, 20, 0.42, 16, false);
-      const ductMesh = new THREE.Mesh(ductGeom, paintOrange);
+      const ductMesh = new THREE.Mesh(new THREE.TubeGeometry(ductCurve, 16, 0.36, 12, false), paintOrange);
       threeScene.add(ductMesh);
 
       threeScene.add(furnaceGrp);
 
       // ================= 5. BĂNG TẢI ĐI VÀO MÁY SẤY =================
       createConveyorBelt(
-        new THREE.Vector3(-5.2, 2.0, 0),
-        new THREE.Vector3(-3.0, 3.8, 0),
+        new THREE.Vector3(-4.6, 1.8, 0),
+        new THREE.Vector3(-2.8, 3.4, 0),
         "Băng tải vào sấy",
-        0x10b981 // Fresh moist green pellets
+        0x10b981 // Moist green granules
       );
 
-      // ================= 6. MÁY SẤY THÙNG QUAY LỚN (X = 2.0, Z = 0) =================
+      // ================= 6. MÁY SẤY THÙNG QUAY (X = 2.0, Z = 0) =================
       const dryerGrp = new THREE.Group();
       dryerGrp.position.set(2.0, 3.2, 0);
 
-      // Rotary dryer cylinder: length 9.6m, diameter 3.2m
-      const dryerDrumG = new THREE.CylinderGeometry(1.65, 1.65, 9.6, 32, 1, false);
+      // Rotary dryer cylinder: length 8.8m, diameter 3.1m
+      const dryerDrumG = new THREE.CylinderGeometry(1.55, 1.55, 8.8, 32, 1, false);
       dryerDrumG.rotateZ(Math.PI / 2);
       const dryerDrum = new THREE.Mesh(dryerDrumG, steelDark);
-      dryerDrum.rotation.z = -0.035; // slight natural industrial inclination
+      dryerDrum.rotation.z = -0.03; // slight slope
       dryerGrp.add(dryerDrum);
       rotatingDrums.push(dryerDrum);
 
-      // 2 Riding Tyres (heavy steel rings)
-      [-2.8, 2.8].forEach(x => {
-        const tyre = new THREE.Mesh(new THREE.TorusGeometry(1.78, 0.16, 16, 36), steelSilver);
+      // 2 Riding Tyres
+      [-2.6, 2.6].forEach(x => {
+        const tyre = new THREE.Mesh(new THREE.TorusGeometry(1.68, 0.14, 16, 32), steelSilver);
         tyre.position.x = x;
         dryerDrum.add(tyre);
 
-        // Trunnion roller bases underneath
-        const trun1 = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.5, 16), steelSilver);
-        trun1.position.set(x, -1.9, 0.7);
-        trun1.rotation.z = Math.PI / 2;
-        dryerGrp.add(trun1);
-        const trun2 = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.5, 16), steelSilver);
-        trun2.position.set(x, -1.9, -0.7);
-        trun2.rotation.z = Math.PI / 2;
-        dryerGrp.add(trun2);
+        // Trunnion rollers underneath
+        [-0.65, 0.65].forEach(z => {
+          const trun = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.45, 16), steelSilver);
+          trun.position.set(x, -1.8, z);
+          trun.rotation.z = Math.PI / 2;
+          dryerGrp.add(trun);
+        });
       });
 
-      // Drive Girth Gear & Motor
-      const girthGear = new THREE.Mesh(new THREE.TorusGeometry(1.86, 0.18, 16, 36), steelSilver);
+      // Drive Ring Gear
+      const girthGear = new THREE.Mesh(new THREE.TorusGeometry(1.75, 0.16, 16, 32), steelSilver);
       girthGear.position.x = 0;
       dryerDrum.add(girthGear);
 
-      // Inlet Hood at X = -4.8 (relative to dryer center: -4.8 is world X = -2.8)
-      const inHood = new THREE.Mesh(new THREE.BoxGeometry(1.2, 3.8, 3.6), steelDark);
-      inHood.position.set(-4.9, 0.2, 0);
+      // Inlet Hood at front (relative X = -4.5 -> world X = -2.5)
+      const inHood = new THREE.Mesh(new THREE.BoxGeometry(1.1, 3.6, 3.4), steelDark);
+      inHood.position.set(-4.5, 0.1, 0);
       dryerGrp.add(inHood);
 
-      // Discharge Hood at X = 4.8 (world X = 6.8)
-      const outHood = new THREE.Mesh(new THREE.BoxGeometry(1.2, 3.8, 3.6), steelDark);
-      outHood.position.set(4.9, 0.2, 0);
+      // Discharge Hood at rear (relative X = 4.5 -> world X = 6.5)
+      const outHood = new THREE.Mesh(new THREE.BoxGeometry(1.1, 3.6, 3.4), steelDark);
+      outHood.position.set(4.5, 0.1, 0);
       dryerGrp.add(outHood);
-
-      // Cyclone dust collector overhead at discharge
-      const cycG = new THREE.CylinderGeometry(0.7, 0.2, 2.4, 16);
-      const cyc = new THREE.Mesh(cycG, paintTeal);
-      cyc.position.set(4.9, 3.8, -2.4);
-      dryerGrp.add(cyc);
-
-      // Stack chimney
-      const chimG = new THREE.CylinderGeometry(0.35, 0.35, 4.5, 16);
-      const chim = new THREE.Mesh(chimG, steelSilver);
-      chim.position.set(4.9, 6.2, -2.4);
-      dryerGrp.add(chim);
 
       threeScene.add(dryerGrp);
 
       // ================= 7. BĂNG TẢI RA MÁY SẤY =================
       createConveyorBelt(
-        new THREE.Vector3(6.8, 1.8, 0),
-        new THREE.Vector3(11.2, 4.2, 0),
+        new THREE.Vector3(6.6, 1.8, 0),
+        new THREE.Vector3(10.0, 3.8, 0),
         "Băng tải ra sấy",
-        0xd97706 // Dried golden-brown warm granules
+        0xd97706 // Dried golden-brown granules
       );
 
-      // ================= 8. SÀNG RÂY PHÂN LOẠI (X = 13.5, Z = 0) =================
+      // ================= 8. SÀNG RÂY (VIBRATING SCREEN) (X = 11.5, Z = 0) =================
       const screenGrp = new THREE.Group();
-      screenGrp.position.set(13.5, 0, 0);
+      screenGrp.position.set(11.5, 0, 0);
 
-      // Steel tower legs
-      const screenLegMat = steelDark;
-      [[-1.6, -1.0], [1.6, -1.0], [-1.6, 1.0], [1.6, 1.0]].forEach(p => {
-        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.16, 4.0, 0.16), screenLegMat);
-        leg.position.set(p[0], 2.0, p[1]);
+      // 4 Heavy Structural Support Legs
+      [[-1.2, -0.7], [1.2, -0.7], [-1.2, 0.7], [1.2, 0.7]].forEach(p => {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.6, 0.14), steelDark);
+        leg.position.set(p[0], 1.3, p[1]);
         screenGrp.add(leg);
+
+        // Heavy helical coil spring on top of each leg
+        const spring = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.45, 12), steelSilver);
+        spring.position.set(p[0], 2.7, p[1]);
+        screenGrp.add(spring);
       });
 
-      // Vibrating screen inclined body
-      const scrBodyG = new THREE.BoxGeometry(3.6, 1.1, 2.0);
+      // Vibrating screen deck box (CHILD OF screenGrp, local position 0, 3.1, 0)
+      const scrBodyG = new THREE.BoxGeometry(2.8, 0.85, 1.6);
       vibratingScreenMesh = new THREE.Mesh(scrBodyG, paintTeal);
-      vibratingScreenMesh.position.set(0, 3.6, 0);
-      vibratingScreenMesh.rotation.z = -0.12; // Incline for particle travel
+      vibratingScreenMesh.position.set(0, 3.1, 0);
+      vibratingScreenMesh.rotation.z = -0.12; // tilted for natural gravity screening
       screenGrp.add(vibratingScreenMesh);
 
-      // Vibration motors on top
-      const motorG = new THREE.CylinderGeometry(0.24, 0.24, 0.7, 12);
-      motorG.rotateZ(Math.PI / 2);
-      const vMotor = new THREE.Mesh(motorG, paintYellow);
-      vMotor.position.set(0, 0.8, 0);
+      // Vibrating eccentric motor mounted directly on top of screen
+      const vMotor = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.6, 12), paintYellow);
+      vMotor.rotateZ(Math.PI / 2);
+      vMotor.position.set(0, 0.65, 0);
       vibratingScreenMesh.add(vMotor);
+
+      // Discharge chute leading to bagging unit
+      const scrChute = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.8, 8), steelSilver);
+      scrChute.rotation.z = -Math.PI / 4;
+      scrChute.position.set(1.4, -0.3, 0);
+      vibratingScreenMesh.add(scrChute);
 
       threeScene.add(screenGrp);
 
-      // ================= 9. CỤM ĐÓNG BAO & SILO THÀNH PHẨM (X = 18.5, Z = 0) =================
+      // ================= 9. CỤM ĐÓNG BAO & SILO THÀNH PHẨM (X = 15.2, Z = 0) =================
       const bagGrp = new THREE.Group();
-      bagGrp.position.set(18.5, 0, 0);
+      bagGrp.position.set(15.2, 0, 0);
 
-      // Silo legs
-      [[-1.2, -1.2], [1.2, -1.2], [-1.2, 1.2], [1.2, 1.2]].forEach(p => {
-        const l = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 3.8, 8), steelDark);
-        l.position.set(p[0], 1.9, p[1]);
+      // Silo 4 support columns
+      [[-1.0, -1.0], [1.0, -1.0], [-1.0, 1.0], [1.0, 1.0]].forEach(p => {
+        const l = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3.4, 8), steelDark);
+        l.position.set(p[0], 1.7, p[1]);
         bagGrp.add(l);
       });
 
       // Silo bottom cone
-      const sCone = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 0.35, 1.4, 20), steelSilver);
-      sCone.position.set(0, 3.2, 0);
+      const sCone = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 0.3, 1.2, 20), steelSilver);
+      sCone.position.set(0, 2.9, 0);
       bagGrp.add(sCone);
 
       // Silo cylindrical storage tank
-      const sTank = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.35, 3.8, 24), steelSilver);
-      sTank.position.set(0, 5.8, 0);
+      const sTank = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 3.2, 24), steelSilver);
+      sTank.position.set(0, 5.1, 0);
       bagGrp.add(sTank);
 
       // Automatic bagging machine station underneath
-      const packMachine = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 1.4), paintTeal);
-      packMachine.position.set(0, 1.5, 0);
+      const packMachine = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.2, 1.2), paintTeal);
+      packMachine.position.set(0, 1.3, 0);
       bagGrp.add(packMachine);
 
-      // Twin bagging spouts
-      [-0.35, 0.35].forEach(x => {
-        const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.08, 0.6, 12), steelSilver);
-        spout.position.set(x, 0.6, 0.5);
-        bagGrp.add(spout);
-      });
+      // Bagging spout
+      const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.5, 12), steelSilver);
+      spout.position.set(0, 0.55, 0.4);
+      bagGrp.add(spout);
 
       // Pallet with stacked 50kg NPK bags
-      const pallet = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 1.5), new THREE.MeshStandardMaterial({ color: 0x854d0e, roughness: 0.9 }));
-      pallet.position.set(0, 0.06, 1.6);
+      const pallet = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.12, 1.4), new THREE.MeshStandardMaterial({ color: 0x854d0e, roughness: 0.9 }));
+      pallet.position.set(0, 0.06, 1.4);
       bagGrp.add(pallet);
 
       const bagMat1 = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.8 }); // Green bag
       const bagMat2 = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.8 }); // Blue bag
       for (let layer = 0; layer < 3; layer++) {
         for (let b = 0; b < 2; b++) {
-          const bg = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.22, 1.3), layer % 2 === 0 ? bagMat1 : bagMat2);
-          bg.position.set((b - 0.5) * 0.68, 0.2 + layer * 0.23, 1.6);
+          const bg = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 1.1), layer % 2 === 0 ? bagMat1 : bagMat2);
+          bg.position.set((b - 0.5) * 0.62, 0.18 + layer * 0.21, 1.4);
           bagGrp.add(bg);
         }
       }
@@ -1691,13 +1655,13 @@
         if (highlightSpotLight) highlightSpotLight.visible = false;
         if (highlightRing) highlightRing.visible = false;
 
-        camTargetPos.set(0, 16, 36);
-        camTargetLookAt.set(1.0, 3.0, 0);
+        camTargetPos.set(0, 15, 35);
+        camTargetLookAt.set(0.5, 2.8, 0);
         isCamLerping = true;
       } else if (STATIONS[preset]) {
         const s = STATIONS[preset];
         if (highlightSpotLight) {
-          highlightSpotLight.position.set(s.pos.x, s.pos.y + 11, s.pos.z + 4);
+          highlightSpotLight.position.set(s.pos.x, s.pos.y + 10, s.pos.z + 4);
           highlightSpotLight.target.position.copy(s.pos);
           highlightSpotLight.visible = true;
         }
@@ -1739,8 +1703,8 @@
         if (highlightSpotLight) highlightSpotLight.visible = false;
         if (highlightRing) highlightRing.visible = false;
 
-        camTargetPos.set(0, 16, 36);
-        camTargetLookAt.set(1.0, 3.0, 0);
+        camTargetPos.set(0, 15, 35);
+        camTargetLookAt.set(0.5, 2.8, 0);
         isCamLerping = true;
 
         document.querySelectorAll('.cam-btn').forEach(b => {
@@ -1763,7 +1727,7 @@
       const info = STEP_EQUIPMENT_MAP[cardIndex];
       if (info) {
         if (highlightSpotLight) {
-          highlightSpotLight.position.set(info.target.x, info.target.y + 11, info.target.z + 4);
+          highlightSpotLight.position.set(info.target.x, info.target.y + 10, info.target.z + 4);
           highlightSpotLight.target.position.copy(info.target);
           highlightSpotLight.visible = true;
         }
@@ -1787,33 +1751,33 @@
       if (isPlantRunning) {
         animClock += delta;
 
-        // 1. Rotate all drum equipment (Granulator, Dryer)
+        // 1. Rotate drum equipment (Granulator, Dryer)
         rotatingDrums.forEach(d => {
           d.rotation.x += 0.02 * plantSpeedMultiplier;
         });
 
-        // 2. Continuous 3D Fertilizer Particles moving along conveyor belts!
+        // 2. Continuous 3D Fertilizer Particles moving along conveyor belts
         conveyorSystems.forEach(sys => {
           sys.particles.forEach(p => {
             p.progress += (0.012 / sys.length) * 12 * plantSpeedMultiplier;
             if (p.progress > 1.0) p.progress -= 1.0;
 
             const currentPos = new THREE.Vector3().lerpVectors(p.start, p.end, p.progress);
-            currentPos.y += 0.20;
+            currentPos.y += 0.16;
             currentPos.z += p.lateralOffset;
             p.mesh.position.copy(currentPos);
           });
         });
 
-        // 3. Vibrating screen realistic oscillation
+        // 3. Vibrating screen realistic oscillation (STAYS FIRMLY ON SPRINGS!)
         if (vibratingScreenMesh) {
-          vibratingScreenMesh.position.y = 3.6 + Math.sin(animClock * 32) * 0.035;
-          vibratingScreenMesh.position.x = 13.5 + Math.cos(animClock * 32) * 0.025;
+          vibratingScreenMesh.position.y = 3.1 + Math.sin(animClock * 32) * 0.035;
+          vibratingScreenMesh.position.x = Math.cos(animClock * 32) * 0.025;
         }
 
         // 4. Furnace flame flicker
         if (furnaceFireLight) {
-          furnaceFireLight.intensity = 2.8 + Math.sin(animClock * 15) * 0.6 + Math.cos(animClock * 23) * 0.4;
+          furnaceFireLight.intensity = 2.6 + Math.sin(animClock * 15) * 0.5 + Math.cos(animClock * 23) * 0.3;
         }
 
         // 5. Highlight Beacon Ring Pulsing Animation
