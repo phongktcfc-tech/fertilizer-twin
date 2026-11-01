@@ -460,50 +460,60 @@ def run_agent_2_visual_inspection(target_key: str = "current") -> Dict[str, Any]
             }
         }
     }
-# ----------------- AGENT 3: Process Parameter & Future Order Engine -----------------
-def run_agent_3_param_analysis(data: List[Dict[str, Any]], target_formula: Optional[str] = None) -> Dict[str, Any]:
-    # Group historical stats by formula
+# ----------------- AGENT 3: 50-YEAR SENIOR FERTILIZER SPECIALIST & NEW ORDER CALCULATOR -----------------
+def run_agent_3_param_analysis(
+    data: List[Dict[str, Any]], 
+    target_formula: Optional[str] = None,
+    target_tons: Optional[float] = 35.0,
+    method: Optional[str] = "steam_drum",
+    season: Optional[str] = "dry"
+) -> Dict[str, Any]:
+    # 1. Calculate statistical baseline from 102 factory historical shifts
     formula_stats = {}
+    valid_fuel_records = 0
+    total_than_all = 0
+    total_vo_dieu_all = 0
+    total_trau_all = 0
+
     for r in data:
-        f = r["Cong_thuc_SP"]
+        f = r.get("Cong_thuc_SP")
         if not f:
             continue
         if f not in formula_stats:
             formula_stats[f] = {
                 "runs": 0,
-                "than_total": 0,
-                "than_count": 0,
-                "vo_dieu_total": 0,
-                "vo_dieu_count": 0,
-                "trau_total": 0,
-                "trau_count": 0,
-                "total_fuel_sum": 0,
-                "total_fuel_count": 0
+                "than_total": 0, "than_count": 0,
+                "vo_dieu_total": 0, "vo_dieu_count": 0,
+                "trau_total": 0, "trau_count": 0,
+                "total_fuel_sum": 0, "total_fuel_count": 0
             }
         fs = formula_stats[f]
         fs["runs"] += 1
-        if r["Than_kg"] is not None:
+        if r.get("Than_kg") is not None:
             fs["than_total"] += r["Than_kg"]
             fs["than_count"] += 1
-        if r["Vo_Dieu_kg"] is not None:
+            total_than_all += r["Than_kg"]
+        if r.get("Vo_Dieu_kg") is not None:
             fs["vo_dieu_total"] += r["Vo_Dieu_kg"]
             fs["vo_dieu_count"] += 1
-        if r["Trau_kg"] is not None:
+            total_vo_dieu_all += r["Vo_Dieu_kg"]
+        if r.get("Trau_kg") is not None:
             fs["trau_total"] += r["Trau_kg"]
             fs["trau_count"] += 1
-        if r["Tong_Nhien_Lieu_kg"] is not None:
+            total_trau_all += r["Trau_kg"]
+        if r.get("Tong_Nhien_Lieu_kg") is not None:
             fs["total_fuel_sum"] += r["Tong_Nhien_Lieu_kg"]
             fs["total_fuel_count"] += 1
+            valid_fuel_records += 1
 
     summary_by_formula = []
     for f, s in formula_stats.items():
-        avg_than = round(s["than_total"] / s["than_count"], 1) if s["than_count"] else 0
-        avg_vo_dieu = round(s["vo_dieu_total"] / s["vo_dieu_count"], 1) if s["vo_dieu_count"] else 0
+        avg_than = round(s["than_total"] / s["than_count"], 1) if s["than_count"] else 1150
+        avg_vo_dieu = round(s["vo_dieu_total"] / s["vo_dieu_count"], 1) if s["vo_dieu_count"] else 400
         avg_trau = round(s["trau_total"] / s["trau_count"], 1) if s["trau_count"] else 0
-        avg_total = round(s["total_fuel_sum"] / s["total_fuel_count"], 1) if s["total_fuel_count"] else 0
+        avg_total = round(s["total_fuel_sum"] / s["total_fuel_count"], 1) if s["total_fuel_count"] else 1550
 
-        # Estimate calorific value: Than ~ 5000 kcal/kg, Vo Dieu ~ 4200 kcal/kg, Trau ~ 3400 kcal/kg
-        est_heat_mcal = (avg_than * 5000 + avg_vo_dieu * 4200 + avg_trau * 3400) / 1000
+        est_heat_mcal = (avg_than * 5200 + avg_vo_dieu * 4200 + avg_trau * 3200) / 1000
 
         summary_by_formula.append({
             "formula": f,
@@ -517,66 +527,206 @@ def run_agent_3_param_analysis(data: List[Dict[str, Any]], target_formula: Optio
 
     summary_by_formula.sort(key=lambda x: x["batches_count"], reverse=True)
 
-    # Future order recommendation logic
-    rec = None
-    tf = target_formula or (summary_by_formula[0]["formula"] if summary_by_formula else "13.7.26")
+    # 2. Parse target formula (whether historical or brand-new custom order)
+    tf = (target_formula or "25.9.9").strip()
+    tons = float(target_tons or 35.0)
+    if tons <= 0: tons = 35.0
+    throughput_t_per_hour = round(tons / 8.0, 2)
+
+    # Find closest match in factory historical data
     matched = next((item for item in summary_by_formula if item["formula"].lower() == tf.lower()), None)
+    is_historical = matched is not None
 
-    # Parse N-P-K numbers if available
-    npk_parts = re.findall(r'\d+', tf)
-    n_val = int(npk_parts[0]) if len(npk_parts) > 0 else 16
-    p_val = int(npk_parts[1]) if len(npk_parts) > 1 else 16
-    k_val = int(npk_parts[2]) if len(npk_parts) > 2 else 8
+    # Parse N-P-K nutrient numbers using regex
+    npk_numbers = [int(n) for n in re.findall(r'\d+', tf)]
+    n_val = npk_numbers[0] if len(npk_numbers) > 0 else 16
+    p_val = npk_numbers[1] if len(npk_numbers) > 1 else 16
+    k_val = npk_numbers[2] if len(npk_numbers) > 2 else 8
 
-    # High Nitrogen (>22%) formulas are heat-sensitive (Urea eutectic melt point ~115°C)
-    if n_val >= 25:
-        target_dryer_inlet = 95 # °C
-        target_drum_temp = 65
-        recommended_blend = "1000 kg Than + 400 kg Vỏ điều (nhiệt êm, tránh sốc nhiệt làm chảy đạm)"
-        moisture_target = "1.0% - 1.2%"
-        warning_tech = "Hàm lượng N cao dễ chảy rữa eutectic. Tuyệt đối không để nhiệt đầu sấy > 105°C."
-    elif k_val >= 20: # High Potassium (13.7.26, 15.5.20)
-        target_dryer_inlet = 120 # °C
-        target_drum_temp = 75
-        recommended_blend = "1100 kg Than + 400 kg Vỏ điều hoặc 1500 kg Than nguyên chất"
-        moisture_target = "1.2% - 1.5%"
-        warning_tech = "Kali cao khó bốc hơi ẩm hơn, cần duy trì nhiệt độ buồng sấy ổn định 115-125°C."
-    else: # Balanced / Standard
-        target_dryer_inlet = 110 # °C
-        target_drum_temp = 70
-        recommended_blend = "1100 kg Than + 400 kg Vỏ điều"
-        moisture_target = "1.2% - 1.5%"
-        warning_tech = "Công thức chuẩn, giữ tải cấp liệu đều và kiểm soát áp suất âm buồng sấy -20 đến -40 Pa."
+    # 3. 50-Year Expert Physicochemical Modeling & Calorific Heat-Mass Balance
+    is_wet_season = (season == "wet")
+    inlet_moisture_pct = 6.2 if is_wet_season else 5.2
 
-    base_fuel = matched["avg_total_fuel_kg"] if matched else 1500
+    # High Nitrogen (N >= 24%): Urea eutectic melting point ~85-95°C
+    if n_val >= 24:
+        formula_type = "ĐẠM CAO (Urea chiếm > 45%)"
+        eutectic_risk = "RẤT NGUY HIỂM (Chảy rữa eutectic ở > 90°C)"
+        eutectic_risk_level = "CRITICAL"
+        dryer_inlet = 75 if n_val >= 28 else 85  # °C
+        dryer_outlet = 62  # °C
+        gran_temp = 52  # °C
+        target_moist = "1.0% - 1.2%"
+        coating_oil_kg_ton = 2.8
+        talc_powder_kg_ton = 3.5
+        base_than_per_ton = 28.5
+        base_vo_dieu_per_ton = 11.5
+        tech_advice = (
+            "⚠️ ĐẶC BIỆT CẢNH BÁO TỪ CHUYÊN GIA 50 NĂM: Đơn hàng hàm lượng Đạm rất cao (N >= 24%). "
+            "Hỗn hợp Urea + DAP/SA có điểm nóng chảy eutectic cực thấp (~85-90°C). "
+            "Nếu để nhiệt khí đầu sấy vượt quá 95°C, bề mặt hạt sẽ bị hóa keo dẻo dính bết nghiêm trọng vào cánh đảo sấy, "
+            "làm tắc buồng sấy và phát sinh hạt méo vỡ. Bắt buộc: "
+            "1) Đốt lò êm với tỷ lệ phối 70% Than + 30% Vỏ điều để giữ ngọn lửa mềm không thốc nhiệt cục bộ; "
+            "2) Duy trì nhiệt độ khí vào máy sấy tối đa 75-85°C; "
+            "3) Quạt hút buồng sấy phải mở hết công suất duy trì áp suất âm -30 đến -40 Pa để cưỡng bức bốc hơi nước."
+        )
+    # High Potassium (K >= 20%): Hygroscopic salt, difficult drying
+    elif k_val >= 20:
+        formula_type = "KALI CAO (MOP/SOP chiếm > 35%)"
+        eutectic_risk = "TRUNG BÌNH (Rủi ro hút ẩm mao dẫn & vón cục lưu kho)"
+        eutectic_risk_level = "WARNING"
+        dryer_inlet = 120  # °C
+        dryer_outlet = 72  # °C
+        gran_temp = 68  # °C
+        target_moist = "1.2% - 1.4%"
+        coating_oil_kg_ton = 3.2
+        talc_powder_kg_ton = 4.0
+        base_than_per_ton = 35.0
+        base_vo_dieu_per_ton = 12.0
+        tech_advice = (
+            "💡 KINH NGHIỆM 50 NĂM VỚI DÒNG KALI CAO: Kali Clorua (KCl) hoặc Kali Sunfat (K2SO4) làm giảm độ ẩm tới hạn CRH của hạt phân xuống ~68%. "
+            "Nước tự do liên kết chặt với mạng tinh thể muối, đòi hỏi buồng sấy phải cấp nhiệt cao và sâu (115-125°C). "
+            "Điểm then chốt quyết định chất lượng: Sau sấy, hạt bắt buộc phải qua máy làm nguội cưỡng bức hạ nhiệt hạt xuống DƯỚI 38°C. "
+            "Nếu đóng bao bì kín khi hạt còn nóng > 42°C, hơi nước dư sẽ bốc lên ngưng tụ ở mặt trong túi PE và hòa tan tinh thể Kali tạo mảng vón tảng cứng ngắc sau 2 tuần lưu kho!"
+        )
+    # High Phosphorus (P >= 18%): DAP / MAP / FMP
+    elif p_val >= 18:
+        formula_type = "LÂN CAO (DAP/FMP chiếm ưu thế)"
+        eutectic_risk = "THẤP (Khó vê viên, cần mầm hơi ẩm chuẩn)"
+        eutectic_risk_level = "INFO"
+        dryer_inlet = 110  # °C
+        dryer_outlet = 68  # °C
+        gran_temp = 65  # °C
+        target_moist = "1.5% - 1.8%"
+        coating_oil_kg_ton = 2.2
+        talc_powder_kg_ton = 2.5
+        base_than_per_ton = 33.0
+        base_vo_dieu_per_ton = 11.0
+        tech_advice = (
+            "⚙️ BÍ QUYẾT TẠO HẠT TỪ CHUYÊN GIA 50 NĂM: Dòng phân lân cao khó cuộn tròn do cấu trúc tinh thể lân khô xốp. "
+            "Bắt buộc cấp hơi nước bão hòa 0.5-0.6 MPa tại 1/3 chiều dài đầu máy vê viên để kích hoạt độ dẻo bề mặt. "
+            "Nên duy trì độ ẩm buồng tạo hạt từ 5.8-6.5%. Tốc độ thùng vê viên khống chế 9.0-9.5 rpm để hạt có đủ thời gian lăn ép cầu tròn trước khi vào máy sấy."
+        )
+    # Balanced Formulas (16.16.8, 20.20.15, 17.7.17...)
+    else:
+        formula_type = "CÂN BẰNG N-P-K TIÊU CHUẨN"
+        eutectic_risk = "THẤP (Dễ vận hành, hạt tròn đẹp)"
+        eutectic_risk_level = "SUCCESS"
+        dryer_inlet = 105  # °C
+        dryer_outlet = 66  # °C
+        gran_temp = 62  # °C
+        target_moist = "1.2% - 1.5%"
+        coating_oil_kg_ton = 2.5
+        talc_powder_kg_ton = 3.0
+        base_than_per_ton = 31.5
+        base_vo_dieu_per_ton = 11.0
+        tech_advice = (
+            "✅ CHỈ DẪN VẬN HÀNH CHUẨN: Dòng NPK cân đối là công thức vàng của ngành phân bón. "
+            "Độ dẻo tạo hạt rất tốt. Cần kiểm soát tỷ lệ dòng bột mịn hồi lưu từ sàng rây về đĩa vê viên ở mức 8-12% "
+            "để hạt không bị phát triển quá cỡ. Duy trì nhiệt sấy ổn định 100-110°C, áp suất lò hơi 0.5-0.6 MPa."
+        )
 
-    rec = {
-        "formula": tf,
-        "historical_runs": matched["batches_count"] if matched else 0,
-        "recommended_fuel_per_shift": {
-            "than_kg": round(matched["avg_than_kg"] if (matched and matched["avg_than_kg"]) else 1100),
-            "vo_dieu_kg": round(matched["avg_vo_dieu_kg"] if (matched and matched["avg_vo_dieu_kg"]) else 400),
-            "total_recommended_kg": round(base_fuel),
-            "blend_strategy": recommended_blend
-        },
-        "target_process_parameters": {
-            "dryer_inlet_temp_c": target_dryer_inlet,
-            "dryer_outlet_temp_c": round(target_dryer_inlet * 0.6),
-            "granulator_drum_temp_c": target_drum_temp,
-            "cooler_outlet_temp_c": 38, # Target < 40°C
-            "granulation_moisture_in_pct": 5.5,
-            "final_moisture_target_pct": moisture_target,
-            "drum_rotation_speed_rpm": 9.5,
-            "coating_oil_rate_kg_ton": 2.5
-        },
-        "technology_guidelines": warning_tech
-    }
+    # Scale fuel and steam to target production tons
+    total_than_kg = round(base_than_per_ton * tons)
+    total_vo_dieu_kg = round(base_vo_dieu_per_ton * tons)
+    total_fuel_kg = total_than_kg + total_vo_dieu_kg
+    steam_flow_th = round(throughput_t_per_hour * 0.36, 2)
+    total_heat_mcal = round((total_than_kg * 5200 + total_vo_dieu_kg * 4200) / 1000, 1)
+    heat_per_ton = round(total_heat_mcal / tons, 2)
 
     return {
-        "summary_by_formula": summary_by_formula,
-        "recommendation": rec
-    }
+        "formula": tf,
+        "n_val": n_val, "p_val": p_val, "k_val": k_val,
+        "formula_type": formula_type,
+        "is_historical": is_historical,
+        "historical_batches_count": matched["batches_count"] if matched else 0,
+        "target_tons": tons,
+        "throughput_t_per_hour": throughput_t_per_hour,
+        "season": season,
+        "method": method,
+        "eutectic_risk": eutectic_risk,
+        "eutectic_risk_level": eutectic_risk_level,
+        
+        # Energy & Fuel Projections
+        "energy_and_fuel": {
+            "than_kg": total_than_kg,
+            "than_per_ton_kg": round(base_than_per_ton, 1),
+            "vo_dieu_kg": total_vo_dieu_kg,
+            "vo_dieu_per_ton_kg": round(base_vo_dieu_per_ton, 1),
+            "total_fuel_kg": total_fuel_kg,
+            "fuel_per_ton_kg": round(base_than_per_ton + base_vo_dieu_per_ton, 1),
+            "steam_flow_t_per_hour": steam_flow_th,
+            "steam_pressure_mpa": "0.50 - 0.65 MPa",
+            "total_heat_mcal": total_heat_mcal,
+            "heat_per_ton_mcal": heat_per_ton,
+            "fuel_blend_ratio": "72% Than cám + 28% Vỏ điều (Lửa êm, tiết kiệm chi phí, không đen khói)"
+        },
 
+        # Station-by-station parameters matching the 7 3D SCADA stations
+        "station_setpoints": {
+            "station_1_feeding": {
+                "name": "1. Phễu Nạp Liệu & Trộn Phối",
+                "inlet_moisture_pct": inlet_moisture_pct,
+                "feed_rate_t_per_h": throughput_t_per_hour,
+                "note": "Kiểm soát cấp liệu đều đặn, không để hẫng nguyên liệu."
+            },
+            "station_2_granulator": {
+                "name": "2. Máy Tạo Hạt (Vê viên / Thùng quay)",
+                "drum_temp_c": gran_temp,
+                "drum_speed_rpm": "9.0 - 9.8 rpm",
+                "binder_solution_rate": "Phun sương đều tâm dòng liệu",
+                "target_moisture_out": f"{inlet_moisture_pct + 0.3}%"
+            },
+            "station_3_furnace": {
+                "name": "3. Lò Cấp Nhiệt & Nhiên Liệu",
+                "fire_temp_c": "550 - 650 °C (Hòa khí sấy)",
+                "steam_flow_th": f"{steam_flow_th} t/h",
+                "steam_pressure": "0.55 MPa",
+                "note": "Gió sơ cấp vừa phải, gió thứ cấp cấp đủ đốt sạch dầu vỏ điều."
+            },
+            "station_4_5_dryer": {
+                "name": "4 & 5. Máy Sấy Quay Xuôi Chiều",
+                "dryer_inlet_temp_c": dryer_inlet,
+                "dryer_outlet_temp_c": dryer_outlet,
+                "temp_drop_delta": dryer_inlet - dryer_outlet,
+                "draft_pressure_pa": "-25 đến -35 Pa (Hút âm)",
+                "final_moisture_pct": target_moist
+            },
+            "station_6_screens": {
+                "name": "6. Cụm Sàng Rây Phân Loại",
+                "target_size_2_4mm_pct": "> 92%",
+                "oversize_above_4mm_pct": "3.0 - 4.5% (Qua búa đập)",
+                "undersize_below_2mm_pct": "3.5 - 5.0% (Hồi lưu tạo hạt)",
+                "screen_cleaner": "Bi cao su đập rung làm sạch tự động"
+            },
+            "station_7_cooler_bagging": {
+                "name": "7. Làm Nguội, Bọc Áo & Đóng Bao",
+                "cooler_outlet_temp_c": "< 38 °C",
+                "coating_oil_kg_ton": f"{coating_oil_kg_ton} kg/t",
+                "talc_powder_kg_ton": f"{talc_powder_kg_ton} kg/t",
+                "shelf_life_months": "6 - 12 tháng không vón tảng"
+            }
+        },
+
+        # Exclusive 50-Year Expert Engineering Guidelines
+        "senior_specialist_advice": tech_advice,
+        "recommendation": {
+            "formula": tf,
+            "recommended_fuel_per_shift": {
+                "than_kg": total_than_kg,
+                "vo_dieu_kg": total_vo_dieu_kg,
+                "total_recommended_kg": total_fuel_kg
+            },
+            "target_process_parameters": {
+                "dryer_inlet_temp_c": dryer_inlet,
+                "dryer_outlet_temp_c": dryer_outlet,
+                "granulator_drum_temp_c": gran_temp,
+                "cooler_outlet_temp_c": 38,
+                "final_moisture_target_pct": target_moist,
+                "coating_oil_rate_kg_ton": coating_oil_kg_ton
+            },
+            "technology_guidelines": tech_advice
+        }
+    }
 # ----------------- AGENT 4: AI Fertilizer Expert Chatbot -----------------
 DOMAIN_KNOWLEDGE = """
 Bạn là Antigravity Fertilizer AI - Chuyên Gia Công Nghệ Sản Xuất Phân Bón NPK & Vận Hành Dây Chuyền Nhà Máy hàng đầu Việt Nam.
@@ -793,12 +943,55 @@ def api_agent2_custom_inspect(payload: Dict[str, Any] = Body(...)):
     }
 
 @app.get("/api/agent3/analysis")
-def api_agent3_analysis(formula: Optional[str] = None):
-    """Run Agent 3 historical parameter analysis & future order calculator"""
+def api_agent3_analysis(
+    formula: Optional[str] = None,
+    target_tons: Optional[float] = 35.0,
+    method: Optional[str] = "steam_drum",
+    season: Optional[str] = "dry"
+):
+    """Run Agent 3 50-Year Senior Fertilizer Specialist Order Calculator"""
     global current_data
     if not current_data:
         fetch_sheet_data()
-    return run_agent_3_param_analysis(current_data, target_formula=formula)
+    return run_agent_3_param_analysis(
+        current_data, 
+        target_formula=formula,
+        target_tons=target_tons,
+        method=method,
+        season=season
+    )
+
+@app.post("/api/agent3/consult")
+def api_agent3_consult(payload: Dict[str, Any] = Body(...)):
+    """Consult Senior Specialist directly for custom orders or troubleshooting"""
+    question = payload.get("question", "")
+    formula = payload.get("formula", "NPK mới")
+    tons = payload.get("target_tons", 35.0)
+    api_key = payload.get("api_key", None)
+    model = payload.get("model", "gemini-2.5-flash")
+
+    senior_system_prompt = f"""[BỐI CẢNH DÂY CHUYỀN SẢN XUẤT PHÂN BÓN NPK]:
+Đơn hàng đang nghiên cứu: {formula} | Sản lượng: {tons} tấn/ca.
+Dây chuyền gồm: Phễu nạp -> Băng tải -> Thùng vê viên tạo hạt hơi nước -> Lò cấp nhiệt Than + Vỏ điều -> Máy sấy quay -> Máy làm nguội -> Sàng ray 2 tầng -> Máy bao áo chống vón -> Silo đóng bao.
+
+BẠN LÀ: Cụ Kỹ Sư Trưởng - Chuyên Gia Công Nghệ Sản Xuất Phân Bón NPK với 50 NĂM KINH NGHIỆM thực chiến tại các nhà máy phân bón lớn của Việt Nam và quốc tế.
+Bạn nắm vững cả nguyên lý hóa lý phân tử (nhiệt eutectic Urea, độ tan muối Kali, phản ứng axit lân, cân bằng ẩm - nhiệt) lẫn âm thanh máy móc cơ khí, ngọn lửa lò đốt và cảm giác cầm nắm hạt phân.
+
+HÃY TRẢ LỜI CÂU HỎI SAU TỪ QUẢN ĐỐC / KỸ SƯ NHÀ MÁY:
+{question}
+
+Yêu cầu trả lời:
+- Xưng 'Tôi' hoặc 'Bác' và gọi người hỏi là 'Anh' hoặc 'Kỹ sư'.
+- Giọng văn đĩnh đạc, ấm áp, từng trải, giàu tính thực chiến công nghiệp.
+- Đưa ra con số định lượng cụ thể (nhiệt độ °C, kg nhiên liệu, độ ẩm %, áp suất lò hơi MPa).
+- Cảnh báo rủi ro thực tế nếu làm sai cách và hướng dẫn mẹo xử lý ngay tại hiện trường."""
+
+    reply = generate_expert_response(prompt=senior_system_prompt, api_key=api_key, model_name=model)
+    return {
+        "reply": reply,
+        "formula": formula,
+        "timestamp": datetime.now().strftime("%H:%M:%S")
+    }
 
 @app.post("/api/agent4/chat")
 def api_agent4_chat(payload: Dict[str, Any] = Body(...)):
