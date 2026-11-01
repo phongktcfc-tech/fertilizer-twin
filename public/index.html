@@ -63,11 +63,51 @@
     }
     #three-canvas-container {
       width: 100%;
-      height: 330px;
+      height: 380px;
       position: relative;
-      background: radial-gradient(circle at 50% 25%, #182e56 0%, #091326 100%);
-      border-radius: 12px;
+      background: radial-gradient(circle at 50% 30%, #152748 0%, #081122 100%);
       overflow: hidden;
+    }
+    :root {
+      --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    /* Animate-UI Inspired Micro-interactions */
+    .tab-btn {
+      transition: all 0.2s var(--ease-spring);
+    }
+    .tab-btn:active {
+      transform: scale(0.975);
+    }
+    .step-card-3d {
+      position: relative;
+      background: linear-gradient(145deg, rgba(14, 25, 48, 0.88) 0%, rgba(8, 15, 30, 0.96) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: 12px;
+      box-shadow: 
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.12),
+        0 4px 12px -2px rgba(0, 0, 0, 0.6);
+      transition: all 0.22s var(--ease-spring);
+      cursor: pointer;
+      user-select: none;
+    }
+    .step-card-3d:hover {
+      transform: translateY(-2px);
+      border-color: rgba(0, 229, 255, 0.55);
+      box-shadow: 
+        inset 0 1px 2px 0 rgba(255, 255, 255, 0.22),
+        0 8px 18px -3px rgba(0, 0, 0, 0.75),
+        0 0 14px rgba(0, 229, 255, 0.35);
+    }
+    .step-card-3d:active {
+      transform: scale(0.985);
+    }
+    .step-card-3d.active {
+      background: linear-gradient(145deg, rgba(14, 42, 80, 0.95) 0%, rgba(7, 24, 50, 0.98) 100%);
+      border: 1.5px solid #00e5ff;
+      box-shadow: 
+        inset 0 1px 3px 0 rgba(255, 255, 255, 0.35),
+        0 8px 24px -2px rgba(0, 0, 0, 0.85),
+        0 0 20px rgba(0, 229, 255, 0.5);
     }
     .badge-pulse {
       animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -203,99 +243,107 @@
     <!-- ==================== TAB 0: 3D DIGITAL TWIN & REAL-TIME DASHBOARD ==================== -->
     <div id="tab-3d" class="tab-content block">
       
-      <!-- TOP CONTROL STRIP FOR SHIFT SELECTION & GOOGLE SHEET PARAMETERS -->
-      <div class="bg-[#091120] border border-gray-800 rounded-xl p-3 mb-3 shadow-lg flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div class="flex flex-wrap items-center gap-2.5">
-          <div class="flex items-center gap-1.5 bg-[#0f1b32] border border-cyan-500/30 px-3 py-1.5 rounded-lg shadow-sm">
+      <!-- TOP CONTROL STRIP FOR SHIFT SELECTION & GOOGLE SHEET PARAMETERS (Technical HUD) -->
+      <div class="bg-[#091120] border border-gray-800 rounded-xl px-3 py-2 mb-2.5 shadow-sm flex flex-wrap items-center justify-between gap-2.5 text-xs">
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-1.5 bg-[#0e192f] border border-cyan-500/30 px-2.5 py-1 rounded-lg">
             <span class="w-2 h-2 rounded-full bg-cyan-400 badge-pulse"></span>
-            <span class="text-gray-400 font-semibold">CHỌN CA VẬN HÀNH:</span>
-            <select id="selectShiftPicker" onchange="onSelectShiftChange(this.value)" class="bg-transparent text-cyan-300 font-mono font-bold focus:outline-none cursor-pointer">
+            <span class="text-gray-400 text-[11px] font-semibold">CA:</span>
+            <select id="selectShiftPicker" onchange="onSelectShiftChange(this.value)" class="bg-transparent text-cyan-300 font-mono font-bold focus:outline-none cursor-pointer text-xs">
               <!-- Populated from Google Sheet -->
             </select>
           </div>
 
-          <div class="flex items-center gap-2 font-mono text-[11px] bg-gray-900/60 px-3 py-1.5 rounded-lg border border-gray-800">
+          <div class="flex items-center gap-2 font-mono text-[11px] bg-gray-900/70 px-2.5 py-1 rounded-lg border border-gray-800">
             <span class="text-gray-400">Ngày: <b id="shiftFieldNgay" class="text-white">--</b></span>
             <span class="text-gray-600">|</span>
             <span class="text-gray-400">Ca: <b id="shiftFieldCa" class="text-amber-400">--</b></span>
             <span class="text-gray-600">|</span>
-            <span class="text-gray-400">Tổ SX: <b id="shiftFieldToSX" class="text-gray-300">Tổ 3</b></span>
+            <span class="text-gray-400">Tổ: <b id="shiftFieldToSX" class="text-gray-300">Tổ 3</b></span>
             <span class="text-gray-600">|</span>
-            <span class="text-gray-400">Công thức SP: <b id="shiftFieldCongThuc" class="text-emerald-400 text-xs">NPK 25.9.9</b></span>
+            <span class="text-gray-400">SP: <b id="shiftFieldCongThuc" class="text-emerald-400">NPK 25.9.9</b></span>
           </div>
         </div>
 
-        <!-- Google Sheet Fuel Info of Current Shift -->
-        <div class="flex items-center gap-3 font-mono text-[11px] bg-[#0c182e] border border-gray-800 px-3 py-1.5 rounded-lg">
-          <span class="text-gray-400">Nhiên liệu tiêu hao:</span>
-          <span class="text-amber-400">Than: <b id="shiftFieldThan" class="text-white">-- kg</b></span>
-          <span class="text-purple-400">Vỏ điều: <b id="shiftFieldVoDieu" class="text-white">-- kg</b></span>
+        <!-- Fuel Telemetry -->
+        <div class="flex items-center gap-2 font-mono text-[11px] bg-[#0c182e] border border-gray-800 px-2.5 py-1 rounded-lg">
+          <span class="text-gray-400">Nhiên liệu:</span>
+          <span class="text-amber-400">Than: <b id="shiftFieldThan" class="text-white">--</b></span>
+          <span class="text-purple-400">Vỏ điều: <b id="shiftFieldVoDieu" class="text-white">--</b></span>
           <span class="text-gray-400">Trấu: <b id="shiftFieldTrau" class="text-gray-300">--</b></span>
           <span id="shiftFuelBadge" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400">Chưa điền</span>
         </div>
       </div>
 
-      <!-- 3D SCADA VIEWPORT (FULL INTERCONNECTED COMPOSITE 7-STATION PLANT) -->
-      <div class="relative rounded-xl border border-cyan-500/30 shadow-2xl bg-[#070e1c] overflow-hidden mb-3">
-
-        <!-- THREE.JS 3D CANVAS -->
-        <div id="three-canvas-container">
+      <!-- MAIN SPLIT WORKSPACE: 1/3 FOR 3D TWIN (4 cols) & 2/3 FOR PROCESS TELEMETRY (8 cols) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+        
+        <!-- LEFT 1/3: COMPACT MINIMALIST 3D DIGITAL TWIN -->
+        <div class="lg:col-span-4 flex flex-col gap-2">
           
-          <!-- Top Toolbar: Camera presets & Plant Operational Controls -->
-          <div class="absolute top-3 right-3 z-20 flex flex-wrap items-center gap-2">
-            <!-- View Selector Preset Buttons -->
-            <div class="bg-black/60 backdrop-blur-md border border-gray-700/80 rounded-lg p-1 flex items-center gap-1 text-[11px] font-mono text-gray-300">
-              <span class="text-gray-500 px-1.5">Camera:</span>
-              <button onclick="setCameraView('overview')" class="cam-btn px-2 py-1 rounded hover:bg-cyan-950 hover:text-cyan-400 active:scale-95 transition bg-cyan-900/40 text-cyan-300 font-bold">Toàn cảnh</button>
-              <button onclick="setCameraView('cum1')" class="cam-btn px-2 py-1 rounded hover:bg-cyan-950 hover:text-cyan-400 active:scale-95 transition">Cụm 1-2 Nạp/Trộn</button>
-              <button onclick="setCameraView('cum3')" class="cam-btn px-2 py-1 rounded hover:bg-cyan-950 hover:text-cyan-400 active:scale-95 transition">Cụm 3 Vê viên</button>
-              <button onclick="setCameraView('cum4')" class="cam-btn px-2 py-1 rounded hover:bg-cyan-950 hover:text-cyan-400 active:scale-95 transition">Cụm 4 Lò & Sấy</button>
-              <button onclick="setCameraView('cum5')" class="cam-btn px-2 py-1 rounded hover:bg-cyan-950 hover:text-cyan-400 active:scale-95 transition">Cụm 5 Làm nguội</button>
-              <button onclick="setCameraView('cum6')" class="cam-btn px-2 py-1 rounded hover:bg-cyan-950 hover:text-cyan-400 active:scale-95 transition">Cụm 6 Sàng rung</button>
-              <button onclick="setCameraView('cum7')" class="cam-btn px-2 py-1 rounded hover:bg-cyan-950 hover:text-cyan-400 active:scale-95 transition">Cụm 7 Đóng bao</button>
-            </div>
-
-            <!-- Start/Stop & Speed Controls -->
-            <div class="bg-black/60 backdrop-blur-md border border-gray-700/80 rounded-lg p-1 flex items-center gap-1.5 text-[11px] font-mono">
-              <button onclick="togglePlantOperation()" id="btnPlantPower" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1 shadow transition">
-                <i data-lucide="play" class="w-3 h-3"></i>
-                <span id="txtPlantPower">DÂY CHUYỀN CHẠY</span>
-              </button>
-
-              <div class="flex items-center gap-1 px-1.5 text-gray-300">
-                <span class="text-gray-500">Tốc độ:</span>
-                <button onclick="changeSpeed(0.5)" class="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300">0.5x</button>
-                <button onclick="changeSpeed(1.0)" class="px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-500/40">1x</button>
-                <button onclick="changeSpeed(1.8)" class="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300">1.8x</button>
+          <div class="relative rounded-xl border border-cyan-500/30 bg-[#070e1c] overflow-hidden shadow-lg flex flex-col">
+            <!-- Top Header Inside 3D: Title & Power -->
+            <div class="p-2.5 bg-[#091122]/90 border-b border-gray-800/80 flex items-center justify-between text-xs font-mono">
+              <div class="flex items-center gap-2 text-cyan-300">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 badge-pulse"></span>
+                <span class="font-bold text-[11px] tracking-wide">3D DIGITAL TWIN (1/3 VIEW)</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button onclick="togglePlantOperation()" id="btnPlantPower" class="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] flex items-center gap-1 transition active:scale-95">
+                  <i data-lucide="play" class="w-3 h-3"></i>
+                  <span id="txtPlantPower">Chạy</span>
+                </button>
+                <button onclick="reset3DCamera()" class="p-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300" title="Reset toàn cảnh">
+                  <i data-lucide="maximize" class="w-3 h-3"></i>
+                </button>
               </div>
             </div>
+
+            <!-- THREE.JS 3D CANVAS (Tối giản, tỷ lệ 1/3) -->
+            <div id="three-canvas-container" class="w-full relative">
+              <!-- Minimal Hint overlay -->
+              <div class="absolute bottom-2 right-2 text-[10px] text-gray-500 font-mono pointer-events-none bg-black/40 px-1.5 py-0.5 rounded">
+                🖱️ Xoay 360° | Zoom
+              </div>
+            </div>
+
+            <!-- Bottom Station Quick Switcher Pills -->
+            <div class="p-1.5 bg-[#08101e] border-t border-gray-800/80 grid grid-cols-4 gap-1 text-[10px] font-mono">
+              <button onclick="setCameraView('overview')" class="cam-btn px-1.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40 text-center font-bold">Toàn cảnh</button>
+              <button onclick="onStepCardClick(2)" class="cam-btn px-1.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 text-center">1. Nạp liệu</button>
+              <button onclick="onStepCardClick(3)" class="cam-btn px-1.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 text-center">2. Vê viên</button>
+              <button onclick="onStepCardClick(1)" class="cam-btn px-1.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 text-center">3. Lò đốt</button>
+              <button onclick="onStepCardClick(4)" class="cam-btn px-1.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 text-center">4. Vào sấy</button>
+              <button onclick="onStepCardClick(5)" class="cam-btn px-1.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 text-center">5. Ra sấy</button>
+              <button onclick="onStepCardClick(6)" class="cam-btn px-1.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 text-center">6. Sàng rây</button>
+              <button onclick="setCameraView('cum7')" class="cam-btn px-1.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 text-center">7. Đóng bao</button>
+            </div>
           </div>
 
-          <!-- Top Left Info Badge -->
-          <div class="absolute top-3 left-3 z-20 bg-black/65 backdrop-blur-md border border-cyan-500/30 px-3 py-1.5 rounded-lg text-xs font-mono text-cyan-300 flex items-center gap-2 shadow-lg">
-            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 badge-pulse"></span>
-            <span>Mô phỏng 7 Cụm Công nghệ liên kết 100% bằng hệ thống Băng tải & Ống thu hồi bụi</span>
+          <!-- Speed Controls (Minimal) -->
+          <div class="bg-[#091120] border border-gray-800 rounded-lg p-1.5 flex items-center justify-between text-[11px] font-mono text-gray-400">
+            <span>Tốc độ mô phỏng:</span>
+            <div class="flex items-center gap-1">
+              <button onclick="changeSpeed(0.5)" class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300">0.5x</button>
+              <button onclick="changeSpeed(1.0)" class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-500/40 font-bold">1.0x</button>
+              <button onclick="changeSpeed(1.8)" class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300">1.8x</button>
+            </div>
           </div>
 
-          <!-- 3D Equipment Label Markers Container (Positioned in 3D Screen Space) -->
-          <div id="equipmentMarkersContainer" class="absolute inset-0 pointer-events-none"></div>
-
-          <!-- Instruction Bottom Right -->
-          <div class="absolute bottom-28 right-3 z-20 hidden md:block text-[11px] text-gray-400 bg-black/60 px-2.5 py-1 rounded backdrop-blur-sm pointer-events-none font-mono">
-            🖱️ Giữ chuột trái: Xoay 360° • Lăn chuột: Phóng to/thu nhỏ • Giữ chuột phải: Di chuyển
-          </div>
         </div>
 
-        <!-- 6 STEP PROCESS CARDS DIRECTLY OVERLAYED ON THE 3D BACKGROUND (Thẻ 3D xúc giác, bóng đổ nổi khối) -->
-        <div class="p-3 bg-gradient-to-t from-[#060b16] via-[#081226]/95 to-[#081226]/85 border-t border-cyan-500/30">
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        <!-- RIGHT 2/3: PROCESS PARAMETER CARDS & TECHNICAL METRICS -->
+        <div class="lg:col-span-8 flex flex-col gap-2.5">
+          
+          <!-- 6 PROCESS STEP CARDS (High-density 3x2 grid, tactile animate-ui style) -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
             
             <!-- Step 1: Lò hơi & Nhiên liệu -->
-            <div id="stepCard1" onclick="onStepCardClick(1)" class="step-card-3d p-2.5" title="Click để tiêu điểm 3D Cụm Lò Đốt & Thùng Sấy">
-              <span class="text-[10px] text-gray-400 uppercase font-semibold flex items-center justify-between">
+            <div id="stepCard1" onclick="onStepCardClick(1)" class="step-card-3d p-2.5 cursor-pointer" title="Click để tiêu điểm 3D Cụm Lò Đốt & Thùng Sấy">
+              <div class="flex items-center justify-between text-[10px] text-gray-400 font-mono font-semibold uppercase">
                 <span>1. LÒ HƠI & NHIÊN LIỆU</span>
                 <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-              </span>
+              </div>
               <div class="flex items-baseline justify-between mt-1">
                 <span id="cardValPressure" class="text-base font-bold font-mono text-white">1.01 MPa</span>
                 <span id="cardValSteamFlow" class="text-xs font-bold font-mono text-red-400">1.44 t/h</span>
@@ -307,161 +355,155 @@
             </div>
 
             <!-- Step 2: Phễu nạp liệu -->
-            <div id="stepCard2" onclick="onStepCardClick(2)" class="step-card-3d p-2.5" title="Click để tiêu điểm 3D Phễu Nạp Liệu & Cân Định Lượng">
-              <span class="text-[10px] text-gray-400 uppercase font-semibold flex items-center justify-between">
+            <div id="stepCard2" onclick="onStepCardClick(2)" class="step-card-3d p-2.5 cursor-pointer" title="Click để tiêu điểm 3D Phễu Nạp Liệu & Cân Định Lượng">
+              <div class="flex items-center justify-between text-[10px] text-gray-400 font-mono font-semibold uppercase">
                 <span>2. PHỄU NẠP LIỆU</span>
                 <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-              </span>
+              </div>
               <div class="flex items-baseline justify-between mt-1">
                 <span class="text-base font-bold font-mono text-white">Ẩm: 1.49 %</span>
+                <span class="text-[11px] font-mono text-gray-400">Tải: <b class="text-gray-200">35 t/h</b></span>
               </div>
               <div class="mt-1 pt-1 border-t border-gray-800/80 flex justify-between text-[10px] text-gray-400 font-mono">
-                <span>Tải: <b class="text-gray-200">35 t/h</b></span>
                 <span>Tổ SX: <b id="cardMiniToSX" class="text-cyan-400">3</b></span>
+                <span>Trạng thái: <b class="text-emerald-400">Ổn định</b></span>
               </div>
             </div>
 
             <!-- Step 3: Máy tạo hạt -->
-            <div id="stepCard3" onclick="onStepCardClick(3)" class="step-card-3d active p-2.5" title="Click để tiêu điểm 3D Máy Tạo Hạt Thùng Vê Viên">
-              <span class="text-[10px] text-cyan-400 uppercase font-bold flex items-center justify-between">
+            <div id="stepCard3" onclick="onStepCardClick(3)" class="step-card-3d active p-2.5 cursor-pointer" title="Click để tiêu điểm 3D Máy Tạo Hạt Thùng Vê Viên">
+              <div class="flex items-center justify-between text-[10px] text-cyan-400 font-mono font-bold uppercase">
                 <span>3. MÁY TẠO HẠT (VÊ VIÊN)</span>
                 <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 badge-pulse"></span>
-              </span>
+              </div>
               <div class="flex items-baseline justify-between mt-1">
                 <span id="cardGranTemp" class="text-base font-bold font-mono text-white">Nhiệt: 54 °C</span>
+                <span class="text-xs font-mono text-cyan-300">Ẩm: <b class="text-white">2.14%</b></span>
               </div>
               <div class="mt-1 pt-1 border-t border-cyan-500/30 flex justify-between text-[10px] text-cyan-300 font-mono">
-                <span>Ẩm MVV: <b class="text-white">2.14%</b></span>
                 <span>SP: <b id="cardMiniFormula" class="text-emerald-400">25.9.9</b></span>
+                <span class="text-cyan-400 font-bold">Thùng quay</span>
               </div>
             </div>
 
             <!-- Step 4: Vào máy sấy -->
-            <div id="stepCard4" onclick="onStepCardClick(4)" class="step-card-3d p-2.5" title="Click để tiêu điểm 3D Đầu Vào Thùng Sấy Quay">
-              <span class="text-[10px] text-gray-400 uppercase font-semibold flex items-center justify-between">
+            <div id="stepCard4" onclick="onStepCardClick(4)" class="step-card-3d p-2.5 cursor-pointer" title="Click để tiêu điểm 3D Đầu Vào Thùng Sấy Quay">
+              <div class="flex items-center justify-between text-[10px] text-gray-400 font-mono font-semibold uppercase">
                 <span>4. VÀO MÁY SẤY</span>
                 <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-              </span>
+              </div>
               <div class="flex items-baseline justify-between mt-1">
                 <span id="cardDryerInletTemp" class="text-base font-bold font-mono text-amber-400">70 °C</span>
+                <span class="text-[11px] font-mono text-gray-400">Ẩm vào: <b class="text-gray-200">2.14%</b></span>
               </div>
               <div class="mt-1 pt-1 border-t border-gray-800/80 flex justify-between text-[10px] text-gray-400 font-mono">
-                <span>Ẩm vào: <b class="text-gray-200">2.14 %</b></span>
                 <span>Áp suất: <b class="text-gray-300">-25 Pa</b></span>
+                <span>Khí nóng cấp</span>
               </div>
             </div>
 
             <!-- Step 5: Cửa ra sấy -->
-            <div id="stepCard5" onclick="onStepCardClick(5)" class="step-card-3d p-2.5" title="Click để tiêu điểm 3D Cửa Ra Sấy & Thùng Làm Nguội">
-              <span class="text-[10px] text-gray-400 uppercase font-semibold flex items-center justify-between">
+            <div id="stepCard5" onclick="onStepCardClick(5)" class="step-card-3d p-2.5 cursor-pointer" title="Click để tiêu điểm 3D Cửa Ra Sấy & Thùng Làm Nguội">
+              <div class="flex items-center justify-between text-[10px] text-gray-400 font-mono font-semibold uppercase">
                 <span>5. CỬA RA SẤY</span>
                 <span class="w-1.5 h-1.5 rounded-full bg-orange-400"></span>
-              </span>
+              </div>
               <div class="flex items-baseline justify-between mt-1">
                 <span id="cardDryerOutletTemp" class="text-base font-bold font-mono text-white">65 °C</span>
+                <span class="text-[11px] font-mono text-emerald-400 font-bold">Ẩm ra: <b class="text-emerald-300">1.54%</b></span>
               </div>
               <div class="mt-1 pt-1 border-t border-gray-800/80 flex justify-between text-[10px] text-gray-400 font-mono">
-                <span>Ẩm ra: <b class="text-emerald-400">1.54 %</b></span>
-                <span class="text-emerald-500 text-[9px]">Đạt chuẩn</span>
+                <span class="text-emerald-400 text-[10px]">Đạt chuẩn &lt; 2.0%</span>
+                <span class="text-gray-400">Qua làm nguội</span>
               </div>
             </div>
 
             <!-- Step 6: Sàng rây & Đầu ra -->
-            <div id="stepCard6" onclick="onStepCardClick(6)" class="step-card-3d p-2.5" title="Click để tiêu điểm 3D Máy Sàng Rung 2 Lớp & Silo Đóng Bao">
-              <span class="text-[10px] text-emerald-400 uppercase font-semibold flex items-center justify-between">
+            <div id="stepCard6" onclick="onStepCardClick(6)" class="step-card-3d p-2.5 cursor-pointer" title="Click để tiêu điểm 3D Máy Sàng Rung 2 Lớp & Silo Đóng Bao">
+              <div class="flex items-center justify-between text-[10px] text-emerald-400 font-mono font-semibold uppercase">
                 <span>6. SÀNG RÂY & ĐẦU RA</span>
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-              </span>
+              </div>
               <div class="flex items-baseline justify-between mt-1">
                 <span class="text-base font-bold font-mono text-white">2-4mm: 22%</span>
+                <span class="text-xs font-mono text-purple-400 font-bold">60 tấn</span>
               </div>
               <div class="mt-1 pt-1 border-t border-gray-800/80 flex justify-between text-[10px] text-purple-400 font-mono">
-                <span>Sản lượng: <b class="text-white">60 tấn</b></span>
-                <span class="text-[9px] text-gray-400">2 lớp lưới</span>
+                <span class="text-[10px] text-gray-400">Sàng 2 tầng lưới</span>
+                <span class="text-emerald-400">Silo đóng bao</span>
               </div>
             </div>
 
           </div>
-        </div>
 
-      </div>
+          <!-- LOWER TECHNICAL TELEMETRY: 7-CA CHART & GRAIN SIZE -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5">
 
-      <!-- LOWER DASHBOARD: 7-SHIFT CHART & GRAIN SIZE -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-
-        <!-- Biểu đồ 7 ca gần nhất (8 Cols) -->
-        <div class="lg:col-span-8 bg-[#091120] border border-gray-800 rounded-xl p-3.5 shadow-xl flex flex-col justify-between">
-          <div class="flex flex-wrap items-center justify-between pb-2 mb-2 border-b border-gray-800 gap-2">
-            <div>
-              <h3 class="font-bold text-white text-xs tracking-wide flex items-center gap-2">
-                <i data-lucide="trending-up" class="w-4 h-4 text-cyan-400"></i>
-                <span>BIỂU ĐỒ DIỄN BIẾN NHIỆT ĐỘ & ĐỘ ẨM TRONG 7 CA GẦN NHẤT</span>
-              </h3>
-              <span class="text-[10px] text-gray-400 font-mono">Dữ liệu thực tế lấy tự động từ Google Sheet</span>
-            </div>
-            
-            <div class="flex items-center gap-2">
-              <select id="selectChartMetric" onchange="updateRecentShiftsChart()" class="bg-[#0f1b32] text-[11px] text-cyan-400 border border-gray-700 rounded-lg px-2.5 py-1 focus:outline-none cursor-pointer">
-                <option value="temp">Nhiệt độ Tạo Hạt vs Khí vào/ra sấy (°C)</option>
-                <option value="moisture">Độ ẩm Hạt vào vs Hạt ra sấy (%)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="h-52 w-full relative">
-            <canvas id="chartRecentShifts"></canvas>
-          </div>
-
-          <div id="chartLegendCustom" class="flex flex-wrap items-center justify-center gap-5 text-[11px] text-gray-300 pt-2 border-t border-gray-800/80 font-mono">
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-1 bg-amber-400 inline-block rounded"></span> Nhiệt tạo hạt (°C)</span>
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-1 bg-red-500 inline-block rounded"></span> Khí vào sấy (°C)</span>
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-1 bg-cyan-400 inline-block rounded"></span> Khí ra sấy (°C)</span>
-          </div>
-        </div>
-
-        <!-- Phân bố cỡ hạt sàng rây & Chi tiết ca đang chọn (4 Cols) -->
-        <div class="lg:col-span-4 bg-[#091120] border border-gray-800 rounded-xl p-3.5 shadow-xl flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between pb-2 mb-2 border-b border-gray-800">
-              <h3 class="font-bold text-white text-xs tracking-wide">PHÂN BỐ CỠ HẠT SÀNG RÂY</h3>
-              <span class="text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">2 Lớp Lưới</span>
-            </div>
-
-            <div class="my-3">
-              <div class="flex justify-between text-[11px] font-mono text-gray-400 mb-1">
-                <span>&lt;2mm: 32%</span>
-                <span class="text-emerald-400 font-bold">2-4mm: 22%</span>
-                <span>&gt;4mm: 46%</span>
+            <!-- Biểu đồ 7 ca gần nhất (7 Cols on md/lg) -->
+            <div class="md:col-span-7 bg-[#091120] border border-gray-800 rounded-xl p-3 shadow-md flex flex-col justify-between">
+              <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-gray-800 text-xs">
+                <div class="flex items-center gap-1.5 text-white font-bold font-mono text-[11px]">
+                  <i data-lucide="trending-up" class="w-3.5 h-3.5 text-cyan-400"></i>
+                  <span>DIỄN BIẾN NHIỆT ĐỘ & ĐỘ ẨM (7 CA)</span>
+                </div>
+                <select id="selectChartMetric" onchange="updateRecentShiftsChart()" class="bg-[#0f1b32] text-[10px] text-cyan-400 border border-gray-700 rounded px-2 py-0.5 focus:outline-none cursor-pointer font-mono">
+                  <option value="temp">Nhiệt độ (°C)</option>
+                  <option value="moisture">Độ ẩm (%)</option>
+                </select>
               </div>
-              <div class="w-full bg-gray-900 rounded-full h-3 flex overflow-hidden border border-gray-800">
-                <div class="bg-amber-400 h-full" style="width: 32%" title="Hạt mịn <2mm: 32%"></div>
-                <div class="bg-emerald-400 h-full" style="width: 22%" title="Hạt chuẩn 2-4mm: 22%"></div>
-                <div class="bg-red-500 h-full" style="width: 46%" title="Hạt to >4mm: 46%"></div>
+
+              <div class="h-44 w-full relative">
+                <canvas id="chartRecentShifts"></canvas>
+              </div>
+
+              <div id="chartLegendCustom" class="flex items-center justify-center gap-4 text-[10px] text-gray-400 pt-1.5 border-t border-gray-800/80 font-mono">
+                <span class="flex items-center gap-1"><span class="w-2 h-1 bg-amber-400 inline-block rounded"></span> Nhiệt hạt</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-1 bg-red-500 inline-block rounded"></span> Khí vào</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-1 bg-cyan-400 inline-block rounded"></span> Khí ra</span>
               </div>
             </div>
 
-            <div class="space-y-1.5 text-[11px] font-mono pt-1">
-              <div class="flex items-center justify-between p-1.5 rounded bg-gray-900/60">
-                <span class="flex items-center gap-1.5 text-gray-300"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Hạt mịn &lt;2mm:</span>
-                <span class="text-amber-400 font-bold">32% (Hồi lưu tạo hạt)</span>
+            <!-- Phân bố cỡ hạt & Ghi chú (5 Cols on md/lg) -->
+            <div class="md:col-span-5 bg-[#091120] border border-gray-800 rounded-xl p-3 shadow-md flex flex-col justify-between text-xs">
+              <div>
+                <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-gray-800">
+                  <span class="font-bold text-white font-mono text-[11px]">CỠ HẠT SÀNG RÂY</span>
+                  <span class="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-1 py-0.2 rounded border border-emerald-500/20">2 Lớp Lưới</span>
+                </div>
+
+                <div class="mb-2">
+                  <div class="w-full bg-gray-900 rounded-full h-2.5 flex overflow-hidden border border-gray-800 mb-1.5">
+                    <div class="bg-amber-400 h-full" style="width: 32%" title="<2mm: 32%"></div>
+                    <div class="bg-emerald-400 h-full" style="width: 22%" title="2-4mm: 22%"></div>
+                    <div class="bg-red-500 h-full" style="width: 46%" title=">4mm: 46%"></div>
+                  </div>
+                  <div class="grid grid-cols-3 gap-1 text-[10px] font-mono text-center">
+                    <div class="p-1 rounded bg-gray-900/80 border border-gray-800">
+                      <span class="text-gray-400 block">&lt;2mm</span>
+                      <b class="text-amber-400">32%</b>
+                    </div>
+                    <div class="p-1 rounded bg-emerald-950/40 border border-emerald-500/30">
+                      <span class="text-emerald-300 block">2-4mm</span>
+                      <b class="text-emerald-400">22%</b>
+                    </div>
+                    <div class="p-1 rounded bg-gray-900/80 border border-gray-800">
+                      <span class="text-gray-400 block">&gt;4mm</span>
+                      <b class="text-red-400">46%</b>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="flex items-center justify-between p-1.5 rounded bg-emerald-950/30 border border-emerald-500/20">
-                <span class="flex items-center gap-1.5 text-emerald-300"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Hạt chuẩn 2-4mm:</span>
-                <span class="text-emerald-400 font-bold">22% (Thành phẩm chuẩn)</span>
-              </div>
-              <div class="flex items-center justify-between p-1.5 rounded bg-gray-900/60">
-                <span class="flex items-center gap-1.5 text-gray-300"><span class="w-2 h-2 rounded-full bg-red-500"></span> Hạt to &gt;4mm:</span>
-                <span class="text-red-400 font-bold">46% (Nghiền hồi lưu)</span>
+
+              <div class="pt-2 border-t border-gray-800 text-[10px]">
+                <span class="text-gray-500 block font-mono">Ghi chú ca:</span>
+                <p id="shiftFieldGhiChu" class="text-gray-300 italic font-sans bg-gray-900/60 p-1.5 rounded border border-gray-800/80 line-clamp-2">
+                  Không có ghi chú đặc biệt cho ca này.
+                </p>
               </div>
             </div>
+
           </div>
 
-          <div class="mt-3 pt-2.5 border-t border-gray-800 text-[11px]">
-            <span class="text-gray-400 block mb-0.5">Ghi chú ca từ Google Sheet:</span>
-            <p id="shiftFieldGhiChu" class="text-gray-300 italic font-sans bg-gray-900/80 p-2 rounded border border-gray-800">
-              Không có ghi chú đặc biệt cho ca này.
-            </p>
-          </div>
         </div>
 
       </div>
@@ -853,8 +895,8 @@
     let highlightSpotLight = null;
     let highlightRing = null;
     let isCamLerping = false;
-    let camTargetPos = new THREE.Vector3(0, 15, 34);
-    let camTargetLookAt = new THREE.Vector3(0, 3.2, 0);
+    let camTargetPos = new THREE.Vector3(-2, 18, 42);
+    let camTargetLookAt = new THREE.Vector3(2, 3.2, 0);
     let selectedCardIndex = 3; // Card 3 (Máy tạo hạt vê viên) starts active
 
     // Station Coordinates (Tightened layout X = -21 to X = 28)
@@ -1248,9 +1290,9 @@
       threeScene.background = new THREE.Color(0x0c1a32);
       threeScene.fog = new THREE.FogExp2(0x0c1a32, 0.007);
 
-      // Camera: closer FOV and position so line fills 80-85% of viewport width
-      threeCamera = new THREE.PerspectiveCamera(36, width / height, 0.1, 1500);
-      threeCamera.position.set(0, 15, 34);
+      // Camera: calibrated for 1/3 layout aspect ratio (isometric perspective)
+      threeCamera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1500);
+      threeCamera.position.set(-2, 18, 42);
 
       threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
       threeRenderer.setSize(width, height);
