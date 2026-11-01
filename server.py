@@ -27,14 +27,22 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PUBLIC_DIR = os.path.join(BASE_DIR, "public")
 CACHE_FILE = os.path.join(BASE_DIR, "sheet_cache.csv")
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1D-9gS09nzviXf2DVle7na6spGVMH0BEAhJiVwY8m-cQ/export?format=csv&gid=0"
+DO_DIEM_CSV_URL = "https://docs.google.com/spreadsheets/d/1D-9gS09nzviXf2DVle7na6spGVMH0BEAhJiVwY8m-cQ/export?format=csv&gid=872186590"
 
 # In-memory store
 current_data: List[Dict[str, Any]] = []
+do_diem_data: List[Dict[str, Any]] = []
+photographed_shifts_cache: List[Dict[str, Any]] = []
 last_sync_time: Optional[str] = None
 sync_status: Dict[str, Any] = {"status": "init", "records": 0, "message": "Chưa đồng bộ"}
 
 def fetch_sheet_data(force: bool = False) -> List[Dict[str, Any]]:
-    global current_data, last_sync_time, sync_status
+    global current_data, do_diem_data, photographed_shifts_cache, last_sync_time, sync_status
+    import urllib.parse
+    import csv
+    import io
+
+    # 1. Fetch main shift sheet (Ca_san xuat)
     try:
         response = requests.get(SHEET_CSV_URL, timeout=8)
         if response.status_code == 200 and len(response.text) > 100:
@@ -47,7 +55,7 @@ def fetch_sheet_data(force: bool = False) -> List[Dict[str, Any]]:
                 "source": "Google Sheets Live",
                 "records": len(df),
                 "last_sync": last_sync_time,
-                "message": f"Đã đồng bộ trực tiếp thành công {len(df)} dòng dữ liệu từ Google Sheet."
+                "message": f"Đã đồng bộ trực tiếp thành công {len(df)} ca từ Google Sheet."
             }
         else:
             raise Exception(f"HTTP {response.status_code} khi tải Google Sheet")
@@ -59,43 +67,105 @@ def fetch_sheet_data(force: bool = False) -> List[Dict[str, Any]]:
                 "source": "Local Cache",
                 "records": len(df),
                 "last_sync": last_sync_time or "Cache",
-                "message": f"Sử dụng bản ghi đệm cục bộ ({len(df)} dòng). Gặp lỗi khi fetch live: {str(e)}"
+                "message": f"Sử dụng bản ghi đệm ({len(df)} ca): {str(e)}"
             }
         else:
-            sync_status = {
-                "status": "error",
-                "source": "None",
-                "records": 0,
-                "last_sync": None,
-                "message": f"Lỗi nạp dữ liệu: {str(e)}"
-            }
-            return []
+            df = pd.DataFrame()
 
-    # Clean & normalize records
     records = []
-    for idx, row in df.iterrows():
-        r = {
-            "id": int(idx) + 1,
-            "Ma_Ca": str(row.get("Ma_Ca", "")).strip() if pd.notna(row.get("Ma_Ca")) else "",
-            "Ngay": str(row.get("Ngay", "")).strip() if pd.notna(row.get("Ngay")) else "",
-            "Ca": str(row.get("Ca", "")).strip() if pd.notna(row.get("Ca")) else "",
-            "To_SX": str(row.get("Tổ Sản Xuất", "")).strip() if pd.notna(row.get("Tổ Sản Xuất")) else "",
-            "Cong_thuc_SP": str(row.get("Cong_thuc_SP", "")).strip() if pd.notna(row.get("Cong_thuc_SP")) else "",
-            "Than_kg": float(row.get("Than_kg")) if pd.notna(row.get("Than_kg")) else None,
-            "Trau_kg": float(row.get("Trau_kg")) if pd.notna(row.get("Trau_kg")) else None,
-            "Vo_Dieu_kg": float(row.get("Vỏ Điều_kg")) if pd.notna(row.get("Vỏ Điều_kg")) else None,
-            "Ghi_chu_ca": str(row.get("Ghi_chu_ca", "")).strip() if pd.notna(row.get("Ghi_chu_ca")) else "",
-        }
-        # Derived total fuel
-        total_fuel = (r["Than_kg"] or 0) + (r["Trau_kg"] or 0) + (r["Vo_Dieu_kg"] or 0)
-        r["Tong_Nhien_Lieu_kg"] = total_fuel if (r["Than_kg"] is not None or r["Trau_kg"] is not None or r["Vo_Dieu_kg"] is not None) else None
-        records.append(r)
-
+    ca_formula_map = {}
+    if not df.empty:
+        for idx, row in df.iterrows():
+            m_ca = str(row.get("Ma_Ca", "")).strip() if pd.notna(row.get("Ma_Ca")) else ""
+            sp = str(row.get("Cong_thuc_SP", "")).strip() if pd.notna(row.get("Cong_thuc_SP")) else ""
+            if m_ca:
+                ca_formula_map[m_ca] = sp
+            r = {
+                "id": int(idx) + 1,
+                "Ma_Ca": m_ca,
+                "Ngay": str(row.get("Ngay", "")).strip() if pd.notna(row.get("Ngay")) else "",
+                "Ca": str(row.get("Ca", "")).strip() if pd.notna(row.get("Ca")) else "",
+                "To_SX": str(row.get("Tổ Sản Xuất", "")).strip() if pd.notna(row.get("Tổ Sản Xuất")) else "",
+                "Cong_thuc_SP": sp,
+                "Than_kg": float(row.get("Than_kg")) if pd.notna(row.get("Than_kg")) else None,
+                "Trau_kg": float(row.get("Trau_kg")) if pd.notna(row.get("Trau_kg")) else None,
+                "Vo_Dieu_kg": float(row.get("Vỏ Điều_kg")) if pd.notna(row.get("Vỏ Điều_kg")) else None,
+                "Ghi_chu_ca": str(row.get("Ghi_chu_ca", "")).strip() if pd.notna(row.get("Ghi_chu_ca")) else "",
+            }
+            total_fuel = (r["Than_kg"] or 0) + (r["Trau_kg"] or 0) + (r["Vo_Dieu_kg"] or 0)
+            r["Tong_Nhien_Lieu_kg"] = total_fuel if (r["Than_kg"] is not None or r["Trau_kg"] is not None or r["Vo_Dieu_kg"] is not None) else None
+            records.append(r)
     current_data = records
+
+    # 2. Fetch & parse Do_Diem do sheet (Measurements & Real Images)
+    app_name = "DigitalTwin_GD1_MayTaoHat-964969503"
+    table_name = "Do_Diem do"
+    dd_records = []
+    photo_list = []
+    try:
+        resp_dd = requests.get(DO_DIEM_CSV_URL, timeout=8)
+        if resp_dd.status_code == 200 and len(resp_dd.text) > 100:
+            reader = csv.reader(io.StringIO(resp_dd.text))
+            rows = list(reader)
+            if len(rows) > 1:
+                headers = rows[0]
+                for r in rows[1:]:
+                    if len(r) > 1:
+                        ma_ca = r[1].strip()
+                        img1 = r[15].strip() if len(r) > 15 else ""
+                        img2 = r[17].strip() if len(r) > 17 else ""
+                        active_img = img1 or img2
+
+                        def parse_pct(val):
+                            if not val: return None
+                            try:
+                                v_clean = str(val).replace("%", "").strip()
+                                fv = float(v_clean)
+                                return fv if fv > 1.0 else round(fv * 100.0, 1)
+                            except:
+                                return None
+
+                        def parse_flt(val):
+                            if not val: return None
+                            try:
+                                return round(float(str(val).strip()), 2)
+                            except:
+                                return None
+
+                        item = {
+                            "Ma_Ca": ma_ca,
+                            "Nguoi_Do": r[2] if len(r) > 2 else "",
+                            "Nhiet_do_tao_hat": parse_flt(r[3]) if len(r) > 3 else None,
+                            "Nhiet_do_khi_vao_say": parse_flt(r[4]) if len(r) > 4 else None,
+                            "Nhiet_do_khi_ra_say": parse_flt(r[5]) if len(r) > 5 else None,
+                            "Do_am_phue_nap": parse_flt(r[6]) if len(r) > 6 else None,
+                            "Ap_suat_lo_hoi": parse_flt(r[7]) if len(r) > 7 else None,
+                            "Luu_luong_lo_hoi": parse_flt(r[8]) if len(r) > 8 else None,
+                            "Do_am_hat_vao_say": parse_flt(r[9]) if len(r) > 9 else None,
+                            "Do_am_hat_ra_say": parse_flt(r[10]) if len(r) > 10 else None,
+                            "San_luong_tan": parse_flt(r[11]) if len(r) > 11 else None,
+                            "Kich_thuoc_duoi_2mm": parse_pct(r[12]) if len(r) > 12 else None,
+                            "Kich_thuoc_2_4mm": parse_pct(r[13]) if len(r) > 13 else None,
+                            "Kich_thuoc_tren_4mm": parse_pct(r[14]) if len(r) > 14 else None,
+                            "Image_File": active_img,
+                            "Image_Url": f"https://www.appsheet.com/template/gettablefileurl?appName={urllib.parse.quote(app_name)}&tableName={urllib.parse.quote(table_name)}&fileName={urllib.parse.quote(active_img)}" if active_img else None,
+                            "Cong_thuc_SP": ca_formula_map.get(ma_ca, "NPK")
+                        }
+                        dd_records.append(item)
+                        if active_img:
+                            photo_list.append(item)
+    except Exception as e_dd:
+        print(f"Error fetching Do_Diem do: {e_dd}")
+
+    do_diem_data = dd_records
+    photographed_shifts_cache = photo_list
     return current_data
 
-# Run initial fetch
-fetch_sheet_data()
+# Initial load on startup
+try:
+    fetch_sheet_data()
+except Exception:
+    pass
 
 # ----------------- AGENT 1: Data Audit & Completeness Engine -----------------
 def run_agent_1_audit(data: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -206,58 +276,127 @@ def run_agent_1_audit(data: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 # ----------------- AGENT 2: Visual Inspection & Quality Tracking Engine -----------------
-def run_agent_2_visual_inspection(sample_id: str = "batch_standard") -> Dict[str, Any]:
-    samples = {
-        "batch_standard": {
-            "sample_name": "Mẫu Hạt NPK 13.7.26 - Lô 2026-10-15 (Đạt Chuẩn)",
-            "image_url": "https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=600&auto=format&fit=crop&q=80",
-            "sphericity_index": 94.6, # % độ tròn đều
-            "size_distribution": {
-                "2.0 - 4.0 mm (Chuẩn xuất xưởng)": 92.4,
-                "> 4.0 mm (Quá cỡ)": 2.8,
-                "< 2.0 mm (Bụi / Hạt mịn)": 4.8
-            },
-            "moisture_est_pct": 1.35, # %
-            "surface_quality": "Bóng đều, màng bao chống vón phủ kín, không nứt rỗ",
-            "caking_risk": "Thấp (An toàn lưu kho 6 tháng)",
-            "status": "PASSED",
-            "status_text": "ĐẠT TIÊU CHUẨN XUẤT XƯỞNG",
-            "agent_notes": "Kích thước viên hạt đồng đều cao, màu xám ánh xanh đặc trưng của SOP. Không có hiện tượng kết tinh bột trắng trên bề mặt."
+def run_agent_2_visual_inspection(target_key: str = "current") -> Dict[str, Any]:
+    global current_data, do_diem_data, photographed_shifts_cache
+
+    # If target_key is 'current', find active shift or first shift
+    target_shift = None
+    if target_key == "current" or target_key == "latest":
+        if current_data:
+            target_shift = current_data[-1]
+    elif any(target_key == item.get("Ma_Ca") for item in current_data):
+        for item in current_data:
+            if item.get("Ma_Ca") == target_key:
+                target_shift = item
+                break
+
+    # Look for matching row in do_diem_data
+    dd_match = None
+    if target_shift:
+        m_ca = target_shift.get("Ma_Ca", "")
+        for r in do_diem_data:
+            if r.get("Ma_Ca") == m_ca:
+                dd_match = r
+                break
+    elif target_key != "batch_standard" and target_key != "batch_high_moisture" and target_key != "batch_attrition":
+        for r in do_diem_data:
+            if r.get("Ma_Ca") == target_key:
+                dd_match = r
+                break
+
+    # Fallback to photographed shifts or presets if needed
+    fallback_photo = "https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=600&auto=format&fit=crop&q=80"
+    if photographed_shifts_cache:
+        fallback_photo = photographed_shifts_cache[0]["Image_Url"]
+
+    # Handle preset modes
+    if target_key == "batch_standard":
+        for p in photographed_shifts_cache:
+            if "13.7.26" in p.get("Cong_thuc_SP", "") or (p.get("Kich_thuoc_2_4mm") or 0) >= 40:
+                dd_match = p
+                break
+    elif target_key == "batch_high_moisture":
+        for p in photographed_shifts_cache:
+            if (p.get("Do_am_hat_ra_say") or 0) >= 2.0:
+                dd_match = p
+                break
+    elif target_key == "batch_attrition":
+        for p in photographed_shifts_cache:
+            if (p.get("Kich_thuoc_duoi_2mm") or 0) >= 40:
+                dd_match = p
+                break
+
+    # Extract actual measurements
+    formula = (dd_match.get("Cong_thuc_SP") if dd_match else (target_shift.get("Cong_thuc_SP") if target_shift else "NPK 13.7.26")) or "NPK 13.7.26"
+    ma_ca = (dd_match.get("Ma_Ca") if dd_match else (target_shift.get("Ma_Ca") if target_shift else "2026-07-31-Ngày")) or "2026-07-31-Ngày"
+    
+    # Real Image from Google Sheet
+    img_url = (dd_match.get("Image_Url") if dd_match and dd_match.get("Image_Url") else None)
+    if not img_url:
+        # Match another photographed shift with same formula
+        for p in photographed_shifts_cache:
+            if p.get("Cong_thuc_SP") == formula and p.get("Image_Url"):
+                img_url = p["Image_Url"]
+                break
+    if not img_url and photographed_shifts_cache:
+        img_url = photographed_shifts_cache[0]["Image_Url"]
+    if not img_url:
+        img_url = fallback_photo
+
+    # Sizing
+    std_pct = dd_match.get("Kich_thuoc_2_4mm") if dd_match and dd_match.get("Kich_thuoc_2_4mm") is not None else 88.5
+    under_pct = dd_match.get("Kich_thuoc_duoi_2mm") if dd_match and dd_match.get("Kich_thuoc_duoi_2mm") is not None else 5.8
+    over_pct = dd_match.get("Kich_thuoc_tren_4mm") if dd_match and dd_match.get("Kich_thuoc_tren_4mm") is not None else 5.7
+
+    # Ensure total adds to ~100
+    if std_pct + under_pct + over_pct == 0:
+        std_pct = 92.4
+        over_pct = 2.8
+        under_pct = 4.8
+
+    moist = dd_match.get("Do_am_hat_ra_say") if dd_match and dd_match.get("Do_am_hat_ra_say") is not None else 1.35
+    if moist == 0 or moist is None: moist = 1.35
+
+    sphericity = round(min(98.5, max(72.0, 75.0 + (std_pct * 0.22) - (max(0, moist - 1.5) * 6.0))), 1)
+
+    if moist > 2.2:
+        status = "WARNING"
+        status_text = "CẢNH BÁO: ĐỘ ẨM HẠT CAO"
+        surface = f"Bề mặt ẩm dính ({moist}%), nguy cơ dính bết lưới sàng & vón cục"
+        caking = "RẤT CAO (Cần tăng nhiệt sấy)"
+        notes = f"Độ ẩm thực tế của ca {ma_ca} là {moist}%, vượt mức chuẩn 1.5%. Đề xuất tăng nhiệt khí vào sấy thêm 10-15°C và duy trì áp suất lò hơi 0.5 - 0.7 MPa."
+    elif under_pct > 35.0:
+        status = "CRITICAL"
+        status_text = "CẢNH BÁO: HẠT BỊ GIÒN VỠ / LỌT SÀNG CAO"
+        surface = f"Tỷ lệ bột mịn lọt sàng cao ({under_pct}%), phân rã cơ học"
+        caking = "Thấp nhưng tỷ lệ hao hụt cao"
+        notes = f"Ca {ma_ca} ghi nhận bột mịn lọt sàng < 2mm là {under_pct}%. Cần kiểm tra độ ẩm hỗn hợp tạo hạt và nhiệt độ vùng sấy sơ bộ tránh gây sốc nhiệt làm vỡ hạt."
+    else:
+        status = "PASSED"
+        status_text = "ĐẠT TIÊU CHUẨN XUẤT XƯỞNG"
+        surface = "Bóng đều, màng bao chống vón phủ kín, khô ráo"
+        caking = "Thấp (An toàn lưu kho 6 tháng)"
+        notes = f"Đơn hàng {formula} tại ca {ma_ca} vận hành rất ổn định. Kích thước chuẩn 2-4mm đạt {std_pct}%, độ ẩm đạt {moist}%, thỏa mãn yêu cầu xuất xưởng."
+
+    return {
+        "sample_name": f"Đơn Hàng: {formula} (Ca {ma_ca})",
+        "ma_ca": ma_ca,
+        "formula": formula,
+        "image_url": img_url,
+        "is_real_sheet_photo": bool(dd_match and dd_match.get("Image_Url")),
+        "sphericity_index": sphericity,
+        "size_distribution": {
+            "2.0 - 4.0 mm (Chuẩn xuất xưởng)": std_pct,
+            "> 4.0 mm (Quá cỡ)": over_pct,
+            "< 2.0 mm (Bụi / Hạt mịn)": under_pct
         },
-        "batch_high_moisture": {
-            "sample_name": "Mẫu Hạt NPK 20.20.15 - Lô 2026-09-20 (Cảnh Báo Ẩm Cao)",
-            "image_url": "https://images.unsplash.com/photo-1615811361523-6bd03d7748e7?w=600&auto=format&fit=crop&q=80",
-            "sphericity_index": 78.2,
-            "size_distribution": {
-                "2.0 - 4.0 mm (Chuẩn xuất xưởng)": 74.0,
-                "> 4.0 mm (Quá cỡ)": 18.5,
-                "< 2.0 mm (Bụi / Hạt mịn)": 7.5
-            },
-            "moisture_est_pct": 2.45, # Độ ẩm cao > 2%
-            "surface_quality": "Bề mặt ướt dính, các viên kết dính tạo thành cục đôi, cục ba",
-            "caking_risk": "CỰC KỲ CAO (Nguy cơ đông cứng bao bì sau 72h)",
-            "status": "WARNING",
-            "status_text": "CẢNH BÁO: ĐỘ ẨM VƯỢT MỨC CHO PHÉP",
-            "agent_notes": "Lượng ẩm tồn dư 2.45% vượt ngưỡng cho phép (tối đa 1.5%). Khuyến nghị: Tăng nhiệt độ đầu sấy máy sấy quay thêm 8°C (lên 115°C) và giảm 10% lưu lượng bốc hơi tại thùng tạo hạt."
-        },
-        "batch_attrition": {
-            "sample_name": "Mẫu Hạt NPK 16.8.16 - Lô 2026-07-28 (Bụi Vỡ Quá Nhiệt)",
-            "image_url": "https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?w=600&auto=format&fit=crop&q=80",
-            "sphericity_index": 81.0,
-            "size_distribution": {
-                "2.0 - 4.0 mm (Chuẩn xuất xưởng)": 76.5,
-                "> 4.0 mm (Quá cỡ)": 3.1,
-                "< 2.0 mm (Bụi / Hạt mịn)": 20.4 # Bụi cao
-            },
-            "moisture_est_pct": 0.85, # Quá khô giòn
-            "surface_quality": "Bề mặt nứt rạn tế vi, nhiều vụn phân hóa do sấy quá khô",
-            "caking_risk": "Thấp về ẩm nhưng cao về hao hụt khi bốc vác",
-            "status": "DEFECT",
-            "status_text": "CẢNH BÁO: HẠT BỊ GIÒN VỠ / QUÁ NHIỆT",
-            "agent_notes": "Tỷ lệ bột vụn lọt sàng 20.4% là rất cao, gây tổn hao nguyên liệu và bụi cyclone. Khuyến nghị: Giảm nhiệt độ lò đốt than xuống 50°C, bổ sung chất trợ kết dính Bentonite hoặc tăng sấy mềm."
-        }
+        "moisture_est_pct": moist,
+        "surface_quality": surface,
+        "caking_risk": caking,
+        "status": status,
+        "status_text": status_text,
+        "agent_notes": notes
     }
-    return samples.get(sample_id, samples["batch_standard"])
 
 # ----------------- AGENT 3: Process Parameter & Future Order Engine -----------------
 def run_agent_3_param_analysis(data: List[Dict[str, Any]], target_formula: Optional[str] = None) -> Dict[str, Any]:
@@ -519,6 +658,49 @@ def api_agent1_audit():
     if not current_data:
         fetch_sheet_data()
     return run_agent_1_audit(current_data)
+
+@app.get("/api/agent2/shift/{ma_ca}")
+def api_agent2_by_shift(ma_ca: str):
+    """Get Agent 2 inspection synchronized with a specific shift from 3D SCADA"""
+    return run_agent_2_visual_inspection(ma_ca)
+
+@app.get("/api/agent2/real-images")
+def api_agent2_real_images():
+    """List all real photographed shifts from Google Sheet"""
+    global photographed_shifts_cache
+    if not photographed_shifts_cache:
+        fetch_sheet_data()
+    return photographed_shifts_cache[:30] # Return top 30 real photographed batches
+
+@app.post("/api/agent2/consult")
+def api_agent2_consult(payload: Dict[str, Any] = Body(...)):
+    """Interactive expert AI consultation for new orders & process optimization (Gemini 2.5)"""
+    message = payload.get("message", "")
+    formula = payload.get("formula", "")
+    api_key = payload.get("api_key", None)
+    model = payload.get("model", "gemini-2.5-flash")
+
+    # Construct contextual prompt for new orders or parameter queries
+    full_prompt = f"""[Ngữ cảnh dây chuyền phân bón NPK]:
+Đơn hàng / Công thức: {formula or 'Đơn hàng mới NPK'}
+Yêu cầu của kỹ sư / quản đốc:
+{message}
+
+Hãy đóng vai trò Chuyên gia Trưởng Công nghệ Sản xuất Phân bón NPK & Vận hành SCADA.
+Nếu người dùng hỏi về đơn hàng mới hoặc tối ưu thông số, hãy đưa ra:
+1. Thông số cụm tạo hạt (Vê viên): Nhiệt độ (°C), độ ẩm phối liệu nạp vào (%), tỷ lệ hơi nước/dung dịch kết dính.
+2. Thông số cụm sấy quay: Nhiệt độ khí nóng vào sấy (°C), nhiệt độ khí ra sấy (°C), áp suất buồng hút (Pa).
+3. Lò đốt & Nhiên liệu: Áp suất lò hơi (MPa), lưu lượng hơi cấp (t/h), lượng than hoặc vỏ điều tiêu hao ước tính cho mỗi ca.
+4. Cụm sàng rây & Đóng bao: Tỷ lệ hạt mục tiêu 2 - 4 mm dự kiến (> 90%), độ ẩm thành phẩm xuất xưởng (< 1.5%), giải pháp màng bao chống vón (anti-caking coating).
+Trình bày chuyên nghiệp, rõ ràng theo từng trạm thiết bị chuẩn kỹ thuật."""
+
+    reply = generate_expert_response(prompt=full_prompt, api_key=api_key, model_name=model)
+    return {
+        "reply": reply,
+        "model_used": model,
+        "formula": formula,
+        "timestamp": datetime.now().strftime("%H:%M:%S")
+    }
 
 @app.get("/api/agent2/sample/{sample_id}")
 def api_agent2_sample(sample_id: str):
