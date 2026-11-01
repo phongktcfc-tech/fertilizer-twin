@@ -2683,6 +2683,9 @@
         panel.classList.remove('hidden');
         document.getElementById('miniChatInput')?.focus();
         // Load saved API Key into mini input
+        if (!localStorage.getItem('gemini_api_key')) {
+          localStorage.setItem('gemini_api_key', null);
+        }
         const savedKey = localStorage.getItem('gemini_api_key');
         const miniKeyInput = document.getElementById('inputMiniApiKey');
         if (savedKey && miniKeyInput) miniKeyInput.value = savedKey;
@@ -2766,7 +2769,7 @@
           body: JSON.stringify({
             message: text,
             api_key: apiKey,
-            model: "gemini-2.5-flash"
+            model: "gemini-3.8-flash"
           })
         });
 
