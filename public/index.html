@@ -309,26 +309,20 @@
 
             <!-- Bottom Station Quick Switcher Pills -->
             <div class="p-1.5 bg-[#08101e] border-t border-gray-800/80 grid grid-cols-4 gap-1 text-[10px] font-mono">
-              <button onclick="setCameraView('overview')" class="cam-btn px-1.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40 text-center font-bold">Toàn cảnh</button>
-              <button onclick="onStepCardClick(2)" class="cam-btn px-1.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 text-center">1. Nạp liệu</button>
-              <button onclick="onStepCardClick(3)" class="cam-btn px-1.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 text-center">2. Vê viên</button>
-              <button onclick="onStepCardClick(1)" class="cam-btn px-1.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 text-center">3. Lò đốt</button>
-              <button onclick="onStepCardClick(4)" class="cam-btn px-1.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 text-center">4. Vào sấy</button>
-              <button onclick="onStepCardClick(5)" class="cam-btn px-1.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 text-center">5. Ra sấy</button>
-              <button onclick="onStepCardClick(6)" class="cam-btn px-1.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 text-center">6. Sàng rây</button>
-              <button onclick="setCameraView('cum7')" class="cam-btn px-1.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 text-center">7. Đóng bao</button>
+              <button onclick="setCameraView('overview')" id="btnCamOverview" class="cam-btn px-1.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40 text-center font-bold flex items-center justify-center gap-1">
+                <span class="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span> Toàn cảnh
+              </button>
+              <button onclick="onStepCardClick(2)" class="cam-btn px-1.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-center">1. Phễu nạp</button>
+              <button onclick="onStepCardClick(3)" class="cam-btn px-1.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-center">2. Vê viên</button>
+              <button onclick="onStepCardClick(1)" class="cam-btn px-1.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-center">3. Lò đốt</button>
+              <button onclick="onStepCardClick(4)" class="cam-btn px-1.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-center">4. Vào sấy</button>
+              <button onclick="onStepCardClick(5)" class="cam-btn px-1.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-center">5. Máy sấy</button>
+              <button onclick="onStepCardClick(6)" class="cam-btn px-1.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-center">6. Sàng rây</button>
+              <button onclick="setCameraView('cum7')" class="cam-btn px-1.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-center">7. Đóng bao</button>
             </div>
           </div>
 
-          <!-- Speed Controls (Minimal) -->
-          <div class="bg-[#091120] border border-gray-800 rounded-lg p-1.5 flex items-center justify-between text-[11px] font-mono text-gray-400">
-            <span>Tốc độ mô phỏng:</span>
-            <div class="flex items-center gap-1">
-              <button onclick="changeSpeed(0.5)" class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300">0.5x</button>
-              <button onclick="changeSpeed(1.0)" class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-500/40 font-bold">1.0x</button>
-              <button onclick="changeSpeed(1.8)" class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300">1.8x</button>
-            </div>
-          </div>
+          
 
         </div>
 
@@ -895,9 +889,9 @@
     let highlightSpotLight = null;
     let highlightRing = null;
     let isCamLerping = false;
-    let camTargetPos = new THREE.Vector3(-2, 18, 42);
-    let camTargetLookAt = new THREE.Vector3(2, 3.2, 0);
-    let selectedCardIndex = 3; // Card 3 (Máy tạo hạt vê viên) starts active
+    let camTargetPos = new THREE.Vector3(0, 16, 36);
+    let camTargetLookAt = new THREE.Vector3(1.0, 3.2, 0);
+    let selectedCardIndex = null; // Start with overview & auto-rotate // Card 3 (Máy tạo hạt vê viên) starts active
 
     // Station Coordinates (Tightened layout X = -21 to X = 28)
     const STATIONS = {
@@ -1280,19 +1274,41 @@
     }
 
     // ==================== THREE.JS EXPERT DIGITAL TWIN ENGINE ====================
+    // Equipment & Station Coordinates matching exact pipeline:
+    // Phễu nạp -> Băng tải -> Máy vê viên -> (cạnh máy vê viên có Lò đốt) -> Băng tải vào sấy -> Máy sấy -> Băng tải ra sấy -> Sàng rây -> Cụm đóng bao
+    const STATIONS = {
+      cum1: { name: "1. Phễu nạp liệu", pos: new THREE.Vector3(-16.0, 3.5, 0), cam: new THREE.Vector3(-16.0, 8.0, 13.0) },
+      cum2: { name: "2. Máy vê viên (tạo hạt)", pos: new THREE.Vector3(-7.5, 3.2, 0), cam: new THREE.Vector3(-7.5, 7.5, 12.5) },
+      cum3: { name: "3. Lò đốt nhiệt (cạnh máy vê viên)", pos: new THREE.Vector3(-7.0, 3.0, 4.0), cam: new THREE.Vector3(-7.0, 7.5, 14.5) },
+      cum4: { name: "4. Băng tải vào máy sấy", pos: new THREE.Vector3(-3.8, 3.2, 0), cam: new THREE.Vector3(-3.8, 7.0, 11.5) },
+      cum5: { name: "5. Máy sấy thùng quay", pos: new THREE.Vector3(2.0, 3.5, 0), cam: new THREE.Vector3(2.0, 8.5, 15.0) },
+      cum6: { name: "6. Băng tải ra sấy & Sàng rây rung", pos: new THREE.Vector3(12.5, 3.5, 0), cam: new THREE.Vector3(12.5, 7.5, 13.0) },
+      cum7: { name: "7. Cụm đóng bao thành phẩm", pos: new THREE.Vector3(18.5, 4.0, 0), cam: new THREE.Vector3(18.5, 8.5, 13.5) }
+    };
+
+    // Mapping 6 KPI Cards to 3D Equipment coordinates
+    const STEP_EQUIPMENT_MAP = {
+      1: { name: "Lò đốt & Nhiên liệu cấp nhiệt", target: new THREE.Vector3(-7.0, 3.0, 4.0), cam: new THREE.Vector3(-7.0, 7.5, 14.5) },
+      2: { name: "Phễu nạp liệu & Cân định lượng", target: new THREE.Vector3(-16.0, 3.5, 0), cam: new THREE.Vector3(-16.0, 8.0, 13.0) },
+      3: { name: "Máy tạo hạt (vê viên)", target: new THREE.Vector3(-7.5, 3.2, 0), cam: new THREE.Vector3(-7.5, 7.5, 12.5) },
+      4: { name: "Vào máy sấy & Khí nóng cấp", target: new THREE.Vector3(-3.8, 3.4, 0), cam: new THREE.Vector3(-3.8, 7.0, 12.0) },
+      5: { name: "Cửa ra máy sấy", target: new THREE.Vector3(6.8, 2.5, 0), cam: new THREE.Vector3(6.8, 7.0, 12.5) },
+      6: { name: "Sàng rây & Cụm đóng bao", target: new THREE.Vector3(15.5, 3.8, 0), cam: new THREE.Vector3(15.5, 8.0, 14.0) }
+    };
+
+    let furnaceFireLight = null;
+
     function init3DPlant() {
       const container = document.getElementById('three-canvas-container');
       const width = container.clientWidth;
       const height = container.clientHeight;
 
       threeScene = new THREE.Scene();
-      // Brighter technical environment background
       threeScene.background = new THREE.Color(0x0c1a32);
       threeScene.fog = new THREE.FogExp2(0x0c1a32, 0.007);
 
-      // Camera: calibrated for 1/3 layout aspect ratio (isometric perspective)
       threeCamera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1500);
-      threeCamera.position.set(-2, 18, 42);
+      threeCamera.position.set(0, 16, 36);
 
       threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
       threeRenderer.setSize(width, height);
@@ -1305,542 +1321,422 @@
       threeControls.enableDamping = true;
       threeControls.dampingFactor = 0.05;
       threeControls.maxPolarAngle = Math.PI / 2 - 0.04;
-      threeControls.target.set(0, 3.2, 0);
+      threeControls.target.set(1.0, 3.0, 0);
 
-      // --- BRIGHT HIGH-CLARITY INDUSTRIAL LIGHTING ---
-      const ambientLight = new THREE.AmbientLight(0xffffff, 1.25);
+      // Camera auto-rotation setup
+      threeControls.autoRotate = true;
+      threeControls.autoRotateSpeed = 0.45; // Gentle slow rotation around model
+
+      // High-Clarity Industrial Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.3);
       threeScene.add(ambientLight);
 
-      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1d365d, 1.6);
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e293b, 1.1);
+      hemiLight.position.set(0, 50, 0);
       threeScene.add(hemiLight);
 
-      // Main overhead/sun directional light
-      const mainLight = new THREE.DirectionalLight(0xffffff, 1.8);
-      mainLight.position.set(20, 35, 25);
-      mainLight.castShadow = true;
-      mainLight.shadow.mapSize.width = 2048;
-      mainLight.shadow.mapSize.height = 2048;
-      mainLight.shadow.camera.near = 0.5;
-      mainLight.shadow.camera.far = 150;
-      mainLight.shadow.camera.left = -40;
-      mainLight.shadow.camera.right = 40;
-      mainLight.shadow.camera.top = 35;
-      mainLight.shadow.camera.bottom = -20;
-      threeScene.add(mainLight);
+      const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.8);
+      dirLight1.position.set(25, 40, 35);
+      dirLight1.castShadow = true;
+      dirLight1.shadow.mapSize.width = 2048;
+      dirLight1.shadow.mapSize.height = 2048;
+      threeScene.add(dirLight1);
 
-      // Front/overhead fill light to make metallic industrial machinery pop
-      const frontFillLight = new THREE.DirectionalLight(0xe0f2fe, 1.2);
-      frontFillLight.position.set(0, 25, 25);
-      threeScene.add(frontFillLight);
+      const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.8);
+      dirLight2.position.set(-30, 25, -25);
+      threeScene.add(dirLight2);
 
-      // Cyan accent rim light
-      const blueRimLight = new THREE.DirectionalLight(0x00e5ff, 1.0);
-      blueRimLight.position.set(-25, 20, -15);
-      threeScene.add(blueRimLight);
-
-      // Dedicated Dynamic Interactive Highlight Spotlight
-      highlightSpotLight = new THREE.SpotLight(0x00e5ff, 4.5, 40, Math.PI / 4, 0.35, 1.2);
-      highlightSpotLight.position.set(-5, 16, 4);
-      highlightSpotLight.target.position.set(-5, 3.2, 0);
-      highlightSpotLight.visible = true; // active for card 3 initially
-      threeScene.add(highlightSpotLight);
-      threeScene.add(highlightSpotLight.target);
-
-      // Floor Highlight Beacon Ring
-      const ringGeo = new THREE.RingGeometry(2.0, 2.35, 32);
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
-      highlightRing = new THREE.Mesh(ringGeo, ringMat);
-      highlightRing.rotation.x = -Math.PI / 2;
-      highlightRing.position.set(-5, 0.05, 0);
-      highlightRing.visible = true;
-      threeScene.add(highlightRing);
-
-      // Technical Floor & Grid
-      const grid = new THREE.GridHelper(80, 50, 0x00e5ff, 0x193254);
-      grid.position.y = 0;
+      // Floor Grid
+      const grid = new THREE.GridHelper(70, 70, 0x38bdf8, 0x1e3a5f);
+      grid.position.y = 0.02;
       threeScene.add(grid);
 
-      const floorGeo = new THREE.PlaneGeometry(100, 100);
-      const floorMat = new THREE.MeshStandardMaterial({
-        color: 0x0a1426,
-        roughness: 0.4,
-        metalness: 0.35
-      });
-      const floor = new THREE.Mesh(floorGeo, floorMat);
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0x071120, roughness: 0.9, metalness: 0.1 });
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), floorMat);
       floor.rotation.x = -Math.PI / 2;
-      floor.position.y = -0.05;
       floor.receiveShadow = true;
       threeScene.add(floor);
 
-      // BUILD INDUSTRIAL NPK PLANT LINE (Left to Right from X = -21 to X = 30)
-      buildIndustrialNPKLine();
+      // Highlight SpotLight & Ring
+      highlightSpotLight = new THREE.SpotLight(0x38bdf8, 6.0, 32, Math.PI / 6, 0.35, 1.2);
+      highlightSpotLight.castShadow = true;
+      highlightSpotLight.visible = false;
+      threeScene.add(highlightSpotLight);
+      threeScene.add(highlightSpotLight.target);
 
-      window.addEventListener('resize', onWindowResize);
-      animate3D();
-    }
+      const ringGeom = new THREE.RingGeometry(2.2, 2.5, 36);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+      highlightRing = new THREE.Mesh(ringGeom, ringMat);
+      highlightRing.rotation.x = -Math.PI / 2;
+      highlightRing.position.y = 0.05;
+      highlightRing.visible = false;
+      threeScene.add(highlightRing);
 
-    // Common Industrial Materials
-    const matSteel = new THREE.MeshStandardMaterial({ color: 0x3b4c68, metalness: 0.8, roughness: 0.3 });
-    const matSteelDark = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.25 });
-    const matCyanDrum = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.65, roughness: 0.25 });
-    const matSilverRing = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.12 });
-    const matOrangePipe = new THREE.MeshStandardMaterial({ color: 0xea580c, metalness: 0.45, roughness: 0.3 });
-    const matBrickFurnace = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.7, metalness: 0.15 });
-    const matGreenScreen = new THREE.MeshStandardMaterial({ color: 0x059669, metalness: 0.55, roughness: 0.3 });
-    const matPurpleSilo = new THREE.MeshStandardMaterial({ color: 0x9333ea, metalness: 0.6, roughness: 0.25 });
-    const matBelt = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85, metalness: 0.1 });
+      // Materials library
+      const steelDark = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
+      const steelSilver = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85, roughness: 0.25 });
+      const paintTeal = new THREE.MeshStandardMaterial({ color: 0x0891b2, metalness: 0.4, roughness: 0.4 });
+      const paintYellow = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.3, roughness: 0.45 });
+      const paintOrange = new THREE.MeshStandardMaterial({ color: 0xea580c, metalness: 0.3, roughness: 0.4 });
+      const brickFurnace = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.8, metalness: 0.15 });
+      const rubberBelt = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9, metalness: 0.1 });
+      const pipeMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.6, roughness: 0.4 });
 
-    function createConveyorBelt(startP, endP, name) {
-      const group = new THREE.Group();
-      const length = startP.distanceTo(endP);
-      const dir = new THREE.Vector3().subVectors(endP, startP).normalize();
+      // Helper: Conveyor Belt Builder
+      function createConveyorBelt(startP, endP, name, particleColor) {
+        const group = new THREE.Group();
+        const dir = new THREE.Vector3().subVectors(endP, startP);
+        const len = dir.length();
+        const mid = new THREE.Vector3().addVectors(startP, endP).multiplyScalar(0.5);
 
-      // Mid point
-      const mid = new THREE.Vector3().addVectors(startP, endP).multiplyScalar(0.5);
-      group.position.copy(mid);
+        // Bed frame
+        const bedGeom = new THREE.BoxGeometry(0.85, 0.16, len);
+        const bed = new THREE.Mesh(bedGeom, rubberBelt);
+        bed.position.copy(mid);
+        bed.lookAt(endP);
+        group.add(bed);
 
-      // Orientation
-      const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), dir);
-      group.quaternion.copy(quat);
+        // Steel side rails
+        const railGeom = new THREE.BoxGeometry(0.06, 0.22, len);
+        const railL = new THREE.Mesh(railGeom, steelSilver);
+        railL.position.set(-0.44, 0.08, 0);
+        const railR = new THREE.Mesh(railGeom, steelSilver);
+        railR.position.set(0.44, 0.08, 0);
+        bed.add(railL);
+        bed.add(railR);
 
-      // Belt Frame (I-Beam / Channel Bed)
-      const frameGeo = new THREE.BoxGeometry(length, 0.22, 0.75);
-      const frame = new THREE.Mesh(frameGeo, matSteel);
-      frame.castShadow = true;
-      group.add(frame);
+        // Support legs at middle
+        const legGeom = new THREE.CylinderGeometry(0.08, 0.08, mid.y, 8);
+        const leg1 = new THREE.Mesh(legGeom, steelDark);
+        leg1.position.set(mid.x, mid.y / 2, mid.z + 0.35);
+        const leg2 = new THREE.Mesh(legGeom, steelDark);
+        leg2.position.set(mid.x, mid.y / 2, mid.z - 0.35);
+        group.add(leg1);
+        group.add(leg2);
 
-      // Belt top strip
-      const beltGeo = new THREE.BoxGeometry(length * 0.96, 0.06, 0.68);
-      const belt = new THREE.Mesh(beltGeo, matBelt);
-      belt.position.y = 0.13;
-      group.add(belt);
+        // End pulleys
+        const pulGeom = new THREE.CylinderGeometry(0.24, 0.24, 0.95, 16);
+        pulGeom.rotateZ(Math.PI / 2);
+        const p1 = new THREE.Mesh(pulGeom, steelDark);
+        p1.position.copy(startP);
+        p1.lookAt(endP);
+        const p2 = new THREE.Mesh(pulGeom, steelDark);
+        p2.position.copy(endP);
+        p2.lookAt(startP);
+        group.add(p1);
+        group.add(p2);
 
-      // End Pulleys (Roller drums)
-      for (let offset of [-length / 2, length / 2]) {
-        const roller = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.78, 16), matSteelDark);
-        roller.rotation.x = Math.PI / 2;
-        roller.position.x = offset;
-        group.add(roller);
-      }
+        threeScene.add(group);
 
-      threeScene.add(group);
-
-      // Intermediate Legs down to ground
-      const legCount = Math.max(2, Math.floor(length / 3.8));
-      for (let i = 0; i <= legCount; i++) {
-        const t = i / legCount;
-        const legWorldPos = new THREE.Vector3().lerpVectors(startP, endP, t);
-        const legH = legWorldPos.y;
-        if (legH > 0.4) {
-          const legMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, legH, 8), matSteel);
-          legMesh.position.set(legWorldPos.x, legH / 2, legWorldPos.z);
-          legMesh.castShadow = true;
-          threeScene.add(legMesh);
+        // Particle dynamics along belt
+        const pColor = particleColor || 0x22c55e;
+        const pMat = new THREE.MeshStandardMaterial({ color: pColor, roughness: 0.6 });
+        const pGeom = new THREE.DodecahedronGeometry(0.1, 0);
+        const particles = [];
+        const numP = Math.floor(len * 4.5);
+        for (let i = 0; i < numP; i++) {
+          const pm = new THREE.Mesh(pGeom, pMat);
+          const prog = i / numP;
+          const pos = new THREE.Vector3().lerpVectors(startP, endP, prog);
+          pos.y += 0.18;
+          pos.z += (Math.random() - 0.5) * 0.4;
+          pm.position.copy(pos);
+          threeScene.add(pm);
+          particles.push({ mesh: pm, progress: prog, start: startP, end: endP, lateralOffset: (Math.random() - 0.5) * 0.35 });
         }
+        conveyorSystems.push({ length: len, particles: particles });
       }
 
-      // 3D Granule Particles traveling along belt
-      const pCount = Math.floor(length * 4.5);
-      const particles = [];
-      const pGeo = new THREE.SphereGeometry(0.09, 6, 6);
-      const pMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+      // ================= 1. PHỄU NẠP LIỆU (X = -16.0, Z = 0) =================
+      const hopperGrp = new THREE.Group();
+      hopperGrp.position.set(-16.0, 0, 0);
 
-      for (let i = 0; i < pCount; i++) {
-        const mesh = new THREE.Mesh(pGeo, pMat);
-        threeScene.add(mesh);
-        particles.push({
-          mesh: mesh,
-          progress: i / pCount,
-          start: startP.clone(),
-          end: endP.clone(),
-          lateralOffset: (Math.random() - 0.5) * 0.42
-        });
-      }
+      // Support 4 structural legs
+      const legMat = steelDark;
+      const legG = new THREE.BoxGeometry(0.18, 4.8, 0.18);
+      [[-1.4, -1.1], [1.4, -1.1], [-1.4, 1.1], [1.4, 1.1]].forEach(pos => {
+        const l = new THREE.Mesh(legG, legMat);
+        l.position.set(pos[0], 2.4, pos[1]);
+        hopperGrp.add(l);
+      });
 
-      conveyorSystems.push({ particles: particles, length: length });
-    }
+      // Upper Hopper Body (Inverted pyramid)
+      const topBox = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.4, 2.6), paintYellow);
+      topBox.position.set(0, 4.6, 0);
+      hopperGrp.add(topBox);
 
-    function buildIndustrialNPKLine() {
+      const coneG = new THREE.CylinderGeometry(1.6, 0.35, 1.8, 4);
+      coneG.rotateY(Math.PI / 4);
+      const cone = new THREE.Mesh(coneG, paintYellow);
+      cone.position.set(0, 3.0, 0);
+      hopperGrp.add(cone);
 
-      // ================= CỤM 1: PHỄU NẠP NGUYÊN LIỆU & CÂN ĐỊNH LƯỢNG (X = -20) =================
-      const cum1Group = new THREE.Group();
-      cum1Group.position.set(-20.0, 0, 0);
+      // Raw fertilizer contents at top
+      const pileMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9 });
+      const pile = new THREE.Mesh(new THREE.ConeGeometry(1.3, 0.6, 8), pileMat);
+      pile.position.set(0, 5.2, 0);
+      hopperGrp.add(pile);
 
-      // 4-leg Steel Tower
-      for (let dx of [-1.5, 1.5]) {
-        for (let dz of [-1.4, 1.4]) {
-          const leg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 5.5, 0.2), matSteel);
-          leg.position.set(dx, 2.75, dz);
-          leg.castShadow = true;
-          cum1Group.add(leg);
-        }
-      }
-      // Horizontal cross braces
-      for (let yLevel of [2.2, 4.4]) {
-        const braceX1 = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.14, 0.14), matSteel);
-        braceX1.position.set(0, yLevel, 1.4);
-        cum1Group.add(braceX1);
-        const braceX2 = braceX1.clone();
-        braceX2.position.z = -1.4;
-        cum1Group.add(braceX2);
-      }
+      // Feed chute out to conveyor
+      const chute = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.8, 8), steelSilver);
+      chute.position.set(1.0, 2.0, 0);
+      chute.rotation.z = -Math.PI / 4;
+      hopperGrp.add(chute);
 
-      // Upper Hopper Body (Inverted Pyramid)
-      const hopperUpper = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.0, 3.0), matCyanDrum);
-      hopperUpper.position.y = 5.4;
-      hopperUpper.castShadow = true;
-      cum1Group.add(hopperUpper);
+      threeScene.add(hopperGrp);
 
-      // Inverted cone bottom funnel
-      const funnelGeo = new THREE.CylinderGeometry(1.6, 0.45, 1.8, 16);
-      const funnel = new THREE.Mesh(funnelGeo, matSteel);
-      funnel.position.y = 3.6;
-      cum1Group.add(funnel);
+      // ================= 2. BĂNG TẢI: PHỄU SANG MÁY VÊ VIÊN =================
+      createConveyorBelt(
+        new THREE.Vector3(-14.8, 1.8, 0),
+        new THREE.Vector3(-10.2, 3.8, 0),
+        "Băng tải nạp",
+        0x64748b // Raw mixed mineral color
+      );
 
-      // Discharge gate & weigher chamber
-      const gate = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.9, 1.1), matSteelDark);
-      gate.position.y = 2.3;
-      cum1Group.add(gate);
+      // ================= 3. MÁY VÊ VIÊN TẠO HẠT (X = -7.5, Z = 0) =================
+      const granGrp = new THREE.Group();
+      granGrp.position.set(-7.5, 2.8, 0);
 
-      threeScene.add(cum1Group);
-
-      // BĂNG TẢI 1: Nạp liệu sang Máy nghiền & Trộn (from X=-19.2, Y=1.9 to X=-14.8, Y=4.2)
-      createConveyorBelt(new THREE.Vector3(-19.2, 1.9, 0), new THREE.Vector3(-14.8, 4.2, 0), "Băng tải 1");
-
-      // ================= CỤM 2: MÁY NGHIỀN & TRỘN LIÊN TỤC (CRUSHER & MIXER) (X = -13) =================
-      const cum2Group = new THREE.Group();
-      cum2Group.position.set(-13.0, 0, 0);
-
-      // Heavy Support frame
-      const frame2 = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.2, 2.4), matSteel);
-      frame2.position.y = 1.1;
-      frame2.castShadow = true;
-      cum2Group.add(frame2);
-
-      // Horizontal Twin-Shaft Mixer Barrel
-      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 3.6, 24), matCyanDrum);
-      barrel.rotation.z = Math.PI / 2;
-      barrel.position.y = 3.2;
-      barrel.castShadow = true;
-      cum2Group.add(barrel);
-
-      // Motor & Gearbox on top
-      const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.3, 16), matSteelDark);
-      motor.position.set(-0.7, 4.8, 0);
-      motor.rotation.z = Math.PI / 2;
-      cum2Group.add(motor);
-
-      const gearbox = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 0.9), matSteelDark);
-      gearbox.position.set(0.3, 4.7, 0);
-      cum2Group.add(gearbox);
-
-      // Steam injection manifold pipe
-      const steamInj = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 3.0, 8), matOrangePipe);
-      steamInj.position.set(0, 4.2, 0.85);
-      cum2Group.add(steamInj);
-
-      // Bottom discharge chute
-      const chute = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.8, 1.0), matSteelDark);
-      chute.position.set(1.2, 2.0, 0);
-      cum2Group.add(chute);
-
-      threeScene.add(cum2Group);
-
-      // BĂNG TẢI 2: Máy nghiền & trộn sang Thùng vê viên (from X=-11.5, Y=1.9 to X=-7.5, Y=4.3)
-      createConveyorBelt(new THREE.Vector3(-11.5, 1.9, 0), new THREE.Vector3(-7.5, 4.3, 0), "Băng tải 2");
-
-      // ================= CỤM 3: THÙNG VÊ VIÊN TẠO HẠT (ROTARY GRANULATOR) (X = -5) =================
-      const cum3Group = new THREE.Group();
-      cum3Group.position.set(-5.0, 3.2, 0);
-      cum3Group.rotation.z = 0.05; // 3 degree technological slope
-
-      // Rotary Drum Cylinder
-      const granDrum = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 6.5, 32), matCyanDrum);
-      granDrum.rotation.z = Math.PI / 2;
-      granDrum.castShadow = true;
-      cum3Group.add(granDrum);
+      // Granulator drum (inclined rotary cylinder)
+      const granDrumG = new THREE.CylinderGeometry(1.35, 1.35, 4.4, 24, 1, true);
+      granDrumG.rotateZ(Math.PI / 2);
+      const granDrum = new THREE.Mesh(granDrumG, paintTeal);
+      granDrum.rotation.z = -0.06; // slight tilt
+      granGrp.add(granDrum);
       rotatingDrums.push(granDrum);
 
-      // 2 Steel Riding Rings
-      for (let xPos of [-1.8, 1.8]) {
-        const ring = new THREE.Mesh(new THREE.TorusGeometry(1.68, 0.11, 16, 32), matSilverRing);
-        ring.position.x = xPos;
-        ring.rotation.y = Math.PI / 2;
-        cum3Group.add(ring);
-      }
+      // Riding rings and gear
+      const ringG = new THREE.TorusGeometry(1.42, 0.1, 12, 32);
+      ringG.rotateY(Math.PI / 2);
+      [-1.3, 1.3].forEach(x => {
+        const r = new THREE.Mesh(ringG, steelSilver);
+        r.position.x = x;
+        granDrum.add(r);
+      });
+      const granGear = new THREE.Mesh(new THREE.TorusGeometry(1.48, 0.14, 16, 32), steelDark);
+      granGear.position.x = 0;
+      granDrum.add(granGear);
 
-      // Middle Drive Girth Gear
-      const gear = new THREE.Mesh(new THREE.CylinderGeometry(1.78, 1.78, 0.32, 32), matSteelDark);
-      gear.rotation.z = Math.PI / 2;
-      cum3Group.add(gear);
+      // Cradle base support
+      const granBase = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.5, 2.2), steelDark);
+      granBase.position.set(0, -1.8, 0);
+      granGrp.add(granBase);
 
-      threeScene.add(cum3Group);
+      // Overhead binder spray pipe
+      const sprayPipe = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 4.2, 8), steelSilver);
+      sprayPipe.rotation.z = Math.PI / 2;
+      sprayPipe.position.set(0, 1.7, 0);
+      granGrp.add(sprayPipe);
 
-      // Trunnion Roller Support Bases on Floor
-      for (let xPos of [-6.8, -3.2]) {
-        const base = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.5, 3.4), matSteel);
-        base.position.set(xPos, 0.75, 0);
-        base.castShadow = true;
-        threeScene.add(base);
+      threeScene.add(granGrp);
 
-        for (let zOffset of [-1.05, 1.05]) {
-          const roller = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.45, 16), matSteelDark);
-          roller.rotation.x = Math.PI / 2;
-          roller.position.set(xPos, 1.6, zOffset);
-          threeScene.add(roller);
-        }
-      }
+      // ================= 4. LÒ ĐỐT NHIỆT (CẠNH MÁY VÊ VIÊN) (X = -7.0, Z = 4.0) =================
+      const furnaceGrp = new THREE.Group();
+      furnaceGrp.position.set(-7.0, 2.1, 4.0);
 
-      // BĂNG TẢI 3: Thùng vê viên sang Thùng sấy quay (from X=-2.4, Y=2.0 to X=1.2, Y=4.2)
-      createConveyorBelt(new THREE.Vector3(-2.4, 2.0, 0), new THREE.Vector3(1.2, 4.2, 0), "Băng tải 3");
+      // Main brick furnace chamber
+      const fBox = new THREE.Mesh(new THREE.BoxGeometry(3.2, 4.0, 2.6), brickFurnace);
+      furnaceGrp.add(fBox);
 
-      // ================= CỤM 4: LÒ ĐỐT NHIỆT & THÙNG SẤY QUAY (FURNACE & ROTARY DRYER) =================
-      // 4A. LÒ ĐỐT NHIỆT (Combustion Furnace at X = 1.2, Z = 3.6)
-      const furnaceGroup = new THREE.Group();
-      furnaceGroup.position.set(1.2, 0, 3.6);
+      // Steel reinforcement corner columns
+      [[-1.6, -1.3], [1.6, -1.3], [-1.6, 1.3], [1.6, 1.3]].forEach(c => {
+        const col = new THREE.Mesh(new THREE.BoxGeometry(0.15, 4.1, 0.15), steelDark);
+        col.position.set(c[0], 0, c[1]);
+        furnaceGrp.add(col);
+      });
 
-      const fBody = new THREE.Mesh(new THREE.BoxGeometry(3.6, 4.2, 3.2), matBrickFurnace);
-      fBody.position.y = 2.1;
-      fBody.castShadow = true;
-      furnaceGroup.add(fBody);
+      // Burner burner gun & fuel supply on front
+      const burnerGun = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.35, 1.0, 16), steelDark);
+      burnerGun.rotation.x = Math.PI / 2;
+      burnerGun.position.set(0, -0.4, 1.5);
+      furnaceGrp.add(burnerGun);
 
-      // Burner dome
-      const fDome = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 3.6, 16), matBrickFurnace);
-      fDome.rotation.z = Math.PI / 2;
-      fDome.position.y = 4.2;
-      furnaceGroup.add(fDome);
+      // Fire inspection viewing window
+      const winMat = new THREE.MeshBasicMaterial({ color: 0xff7700 });
+      const win = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 0.1), winMat);
+      win.position.set(0, 0.5, 1.32);
+      furnaceGrp.add(win);
 
-      // Tall Chimney Stack
-      const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 8.0, 16), matSteelDark);
-      stack.position.set(0.9, 6.2, 0);
-      stack.castShadow = true;
-      furnaceGroup.add(stack);
+      // Internal Flame Fire Glow Light
+      furnaceFireLight = new THREE.PointLight(0xff5500, 3.2, 14);
+      furnaceFireLight.position.set(0, 0.5, 1.4);
+      furnaceGrp.add(furnaceFireLight);
 
-      // Furnace Internal Glow
-      const fGlow = new THREE.PointLight(0xff4500, 3.0, 12);
-      fGlow.position.set(-0.8, 2.0, 0);
-      furnaceGroup.add(fGlow);
+      // HOT AIR DUCT CONNECTING FURNACE TO DRYER INLET
+      // From furnace top (-7.0, 3.8, 3.0) curving into dryer inlet at (-3.2, 4.0, 0)
+      const ductCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-7.0, 4.0, 3.0),
+        new THREE.Vector3(-5.5, 4.8, 2.0),
+        new THREE.Vector3(-4.0, 4.4, 0.8),
+        new THREE.Vector3(-3.2, 4.0, 0)
+      ]);
+      const ductGeom = new THREE.TubeGeometry(ductCurve, 20, 0.42, 16, false);
+      const ductMesh = new THREE.Mesh(ductGeom, paintOrange);
+      threeScene.add(ductMesh);
 
-      threeScene.add(furnaceGroup);
+      threeScene.add(furnaceGrp);
 
-      // Orange Hot Gas Duct connecting Furnace to Dryer Inlet
-      const hotDuct = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 4.5, 16), matOrangePipe);
-      hotDuct.position.set(1.2, 4.0, 1.8);
-      hotDuct.rotation.x = Math.PI / 2;
-      hotDuct.rotation.y = 0.25;
-      threeScene.add(hotDuct);
+      // ================= 5. BĂNG TẢI ĐI VÀO MÁY SẤY =================
+      createConveyorBelt(
+        new THREE.Vector3(-5.2, 2.0, 0),
+        new THREE.Vector3(-3.0, 3.8, 0),
+        "Băng tải vào sấy",
+        0x10b981 // Fresh moist green pellets
+      );
 
-      // 4B. THÙNG SẤY QUAY LỚN (ROTARY DRYER DRUM) (Centered at X = 6.8)
-      const dryerGroup = new THREE.Group();
-      dryerGroup.position.set(6.8, 3.6, 0);
-      dryerGroup.rotation.z = 0.04;
+      // ================= 6. MÁY SẤY THÙNG QUAY LỚN (X = 2.0, Z = 0) =================
+      const dryerGrp = new THREE.Group();
+      dryerGrp.position.set(2.0, 3.2, 0);
 
-      const dryerDrum = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 10.5, 32), matCyanDrum);
-      dryerDrum.rotation.z = Math.PI / 2;
-      dryerDrum.castShadow = true;
-      dryerGroup.add(dryerDrum);
+      // Rotary dryer cylinder: length 9.6m, diameter 3.2m
+      const dryerDrumG = new THREE.CylinderGeometry(1.65, 1.65, 9.6, 32, 1, false);
+      dryerDrumG.rotateZ(Math.PI / 2);
+      const dryerDrum = new THREE.Mesh(dryerDrumG, steelDark);
+      dryerDrum.rotation.z = -0.035; // slight natural industrial inclination
+      dryerGrp.add(dryerDrum);
       rotatingDrums.push(dryerDrum);
 
-      // 2 Large Riding Rings
-      for (let xPos of [-3.5, 3.5]) {
-        const ring = new THREE.Mesh(new THREE.TorusGeometry(2.3, 0.15, 16, 32), matSilverRing);
-        ring.position.x = xPos;
-        ring.rotation.y = Math.PI / 2;
-        dryerGroup.add(ring);
-      }
+      // 2 Riding Tyres (heavy steel rings)
+      [-2.8, 2.8].forEach(x => {
+        const tyre = new THREE.Mesh(new THREE.TorusGeometry(1.78, 0.16, 16, 36), steelSilver);
+        tyre.position.x = x;
+        dryerDrum.add(tyre);
 
-      // Middle Drive Girth Gear
-      const dGear = new THREE.Mesh(new THREE.CylinderGeometry(2.45, 2.45, 0.42, 32), matSteelDark);
-      dGear.rotation.z = Math.PI / 2;
-      dryerGroup.add(dGear);
+        // Trunnion roller bases underneath
+        const trun1 = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.5, 16), steelSilver);
+        trun1.position.set(x, -1.9, 0.7);
+        trun1.rotation.z = Math.PI / 2;
+        dryerGrp.add(trun1);
+        const trun2 = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.5, 16), steelSilver);
+        trun2.position.set(x, -1.9, -0.7);
+        trun2.rotation.z = Math.PI / 2;
+        dryerGrp.add(trun2);
+      });
 
-      threeScene.add(dryerGroup);
+      // Drive Girth Gear & Motor
+      const girthGear = new THREE.Mesh(new THREE.TorusGeometry(1.86, 0.18, 16, 36), steelSilver);
+      girthGear.position.x = 0;
+      dryerDrum.add(girthGear);
 
-      // Trunnion Rollers for Dryer
-      for (let xPos of [3.6, 10.0]) {
-        const base = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.7, 4.5), matSteel);
-        base.position.set(xPos, 0.85, 0);
-        base.castShadow = true;
-        threeScene.add(base);
+      // Inlet Hood at X = -4.8 (relative to dryer center: -4.8 is world X = -2.8)
+      const inHood = new THREE.Mesh(new THREE.BoxGeometry(1.2, 3.8, 3.6), steelDark);
+      inHood.position.set(-4.9, 0.2, 0);
+      dryerGrp.add(inHood);
 
-        for (let zOffset of [-1.4, 1.4]) {
-          const roller = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.65, 16), matSteelDark);
-          roller.rotation.x = Math.PI / 2;
-          roller.position.set(xPos, 1.9, zOffset);
-          threeScene.add(roller);
+      // Discharge Hood at X = 4.8 (world X = 6.8)
+      const outHood = new THREE.Mesh(new THREE.BoxGeometry(1.2, 3.8, 3.6), steelDark);
+      outHood.position.set(4.9, 0.2, 0);
+      dryerGrp.add(outHood);
+
+      // Cyclone dust collector overhead at discharge
+      const cycG = new THREE.CylinderGeometry(0.7, 0.2, 2.4, 16);
+      const cyc = new THREE.Mesh(cycG, paintTeal);
+      cyc.position.set(4.9, 3.8, -2.4);
+      dryerGrp.add(cyc);
+
+      // Stack chimney
+      const chimG = new THREE.CylinderGeometry(0.35, 0.35, 4.5, 16);
+      const chim = new THREE.Mesh(chimG, steelSilver);
+      chim.position.set(4.9, 6.2, -2.4);
+      dryerGrp.add(chim);
+
+      threeScene.add(dryerGrp);
+
+      // ================= 7. BĂNG TẢI RA MÁY SẤY =================
+      createConveyorBelt(
+        new THREE.Vector3(6.8, 1.8, 0),
+        new THREE.Vector3(11.2, 4.2, 0),
+        "Băng tải ra sấy",
+        0xd97706 // Dried golden-brown warm granules
+      );
+
+      // ================= 8. SÀNG RÂY PHÂN LOẠI (X = 13.5, Z = 0) =================
+      const screenGrp = new THREE.Group();
+      screenGrp.position.set(13.5, 0, 0);
+
+      // Steel tower legs
+      const screenLegMat = steelDark;
+      [[-1.6, -1.0], [1.6, -1.0], [-1.6, 1.0], [1.6, 1.0]].forEach(p => {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.16, 4.0, 0.16), screenLegMat);
+        leg.position.set(p[0], 2.0, p[1]);
+        screenGrp.add(leg);
+      });
+
+      // Vibrating screen inclined body
+      const scrBodyG = new THREE.BoxGeometry(3.6, 1.1, 2.0);
+      vibratingScreenMesh = new THREE.Mesh(scrBodyG, paintTeal);
+      vibratingScreenMesh.position.set(0, 3.6, 0);
+      vibratingScreenMesh.rotation.z = -0.12; // Incline for particle travel
+      screenGrp.add(vibratingScreenMesh);
+
+      // Vibration motors on top
+      const motorG = new THREE.CylinderGeometry(0.24, 0.24, 0.7, 12);
+      motorG.rotateZ(Math.PI / 2);
+      const vMotor = new THREE.Mesh(motorG, paintYellow);
+      vMotor.position.set(0, 0.8, 0);
+      vibratingScreenMesh.add(vMotor);
+
+      threeScene.add(screenGrp);
+
+      // ================= 9. CỤM ĐÓNG BAO & SILO THÀNH PHẨM (X = 18.5, Z = 0) =================
+      const bagGrp = new THREE.Group();
+      bagGrp.position.set(18.5, 0, 0);
+
+      // Silo legs
+      [[-1.2, -1.2], [1.2, -1.2], [-1.2, 1.2], [1.2, 1.2]].forEach(p => {
+        const l = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 3.8, 8), steelDark);
+        l.position.set(p[0], 1.9, p[1]);
+        bagGrp.add(l);
+      });
+
+      // Silo bottom cone
+      const sCone = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 0.35, 1.4, 20), steelSilver);
+      sCone.position.set(0, 3.2, 0);
+      bagGrp.add(sCone);
+
+      // Silo cylindrical storage tank
+      const sTank = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.35, 3.8, 24), steelSilver);
+      sTank.position.set(0, 5.8, 0);
+      bagGrp.add(sTank);
+
+      // Automatic bagging machine station underneath
+      const packMachine = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 1.4), paintTeal);
+      packMachine.position.set(0, 1.5, 0);
+      bagGrp.add(packMachine);
+
+      // Twin bagging spouts
+      [-0.35, 0.35].forEach(x => {
+        const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.08, 0.6, 12), steelSilver);
+        spout.position.set(x, 0.6, 0.5);
+        bagGrp.add(spout);
+      });
+
+      // Pallet with stacked 50kg NPK bags
+      const pallet = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 1.5), new THREE.MeshStandardMaterial({ color: 0x854d0e, roughness: 0.9 }));
+      pallet.position.set(0, 0.06, 1.6);
+      bagGrp.add(pallet);
+
+      const bagMat1 = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.8 }); // Green bag
+      const bagMat2 = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.8 }); // Blue bag
+      for (let layer = 0; layer < 3; layer++) {
+        for (let b = 0; b < 2; b++) {
+          const bg = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.22, 1.3), layer % 2 === 0 ? bagMat1 : bagMat2);
+          bg.position.set((b - 0.5) * 0.68, 0.2 + layer * 0.23, 1.6);
+          bagGrp.add(bg);
         }
       }
 
-      // BĂNG TẢI 4: Thùng sấy sang Thùng làm nguội (from X=12.0, Y=2.0 to X=15.0, Y=4.0)
-      createConveyorBelt(new THREE.Vector3(12.0, 2.0, 0), new THREE.Vector3(15.0, 4.0, 0), "Băng tải 4");
+      threeScene.add(bagGrp);
 
-      // ================= CỤM 5: THÙNG LÀM NGUỘI (ROTARY COOLER) (Centered at X = 17.5) =================
-      const coolerGroup = new THREE.Group();
-      coolerGroup.position.set(17.5, 3.2, 0);
-      coolerGroup.rotation.z = 0.04;
-
-      const coolerDrum = new THREE.Mesh(new THREE.CylinderGeometry(1.65, 1.65, 7.2, 32), matCyanDrum);
-      coolerDrum.rotation.z = Math.PI / 2;
-      coolerDrum.castShadow = true;
-      coolerGroup.add(coolerDrum);
-      rotatingDrums.push(coolerDrum);
-
-      for (let xPos of [-2.2, 2.2]) {
-        const ring = new THREE.Mesh(new THREE.TorusGeometry(1.72, 0.11, 16, 32), matSilverRing);
-        ring.position.x = xPos;
-        ring.rotation.y = Math.PI / 2;
-        coolerGroup.add(ring);
-      }
-
-      threeScene.add(coolerGroup);
-
-      // Trunnion Rollers for Cooler
-      for (let xPos of [15.5, 19.5]) {
-        const base = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.5, 3.4), matSteel);
-        base.position.set(xPos, 0.75, 0);
-        base.castShadow = true;
-        threeScene.add(base);
-      }
-
-      // Blower duct & fan for cooler
-      const fanBlower = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 1.1, 16), matSteel);
-      fanBlower.position.set(21.2, 1.5, 1.8);
-      threeScene.add(fanBlower);
-
-      const fanDuct = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 2.2, 12), matSteel);
-      fanDuct.position.set(20.8, 2.4, 0.9);
-      fanDuct.rotation.z = -0.5;
-      threeScene.add(fanDuct);
-
-      // BĂNG TẢI 5: Thùng làm nguội sang Máy sàng (from X=20.5, Y=2.0 to X=23.0, Y=4.6)
-      createConveyorBelt(new THREE.Vector3(20.5, 2.0, 0), new THREE.Vector3(23.0, 4.6, 0), "Băng tải 5");
-
-      // ================= CỤM 6: MÁY SÀNG PHÂN LOẠI 2 LỚP (VIBRATING SCREEN) (X = 24.2) =================
-      const screenBase = new THREE.Group();
-      screenBase.position.set(24.2, 0, 0);
-
-      // Steel support structure
-      for (let dx of [-1.3, 1.3]) {
-        for (let dz of [-1.2, 1.2]) {
-          const leg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.2, 0.2), matSteel);
-          leg.position.set(dx, 1.6, dz);
-          screenBase.add(leg);
-        }
-      }
-
-      // 4 Heavy Coil Springs on top of frame
-      for (let dx of [-1.1, 1.1]) {
-        for (let dz of [-1.0, 1.0]) {
-          const spring = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.75, 10), matSteelDark);
-          spring.position.set(dx, 3.6, dz);
-          screenBase.add(spring);
-        }
-      }
-
-      // Vibrating Box (Inclined, Green, 2 internal mesh decks)
-      const sBox = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.0, 2.4), matGreenScreen);
-      sBox.rotation.z = 0.12;
-      sBox.position.y = 4.6;
-      sBox.castShadow = true;
-      screenBase.add(sBox);
-      vibratingScreenMesh = sBox;
-
-      // Internal visible 2 decks (wireframes)
-      const meshTop = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 2.0, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true }));
-      meshTop.rotation.x = -Math.PI / 2;
-      meshTop.position.y = 0.28;
-      sBox.add(meshTop);
-
-      const meshBottom = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 2.0, 16, 16), new THREE.MeshBasicMaterial({ color: 0x94a3b8, wireframe: true }));
-      meshBottom.rotation.x = -Math.PI / 2;
-      meshBottom.position.y = -0.28;
-      sBox.add(meshBottom);
-
-      threeScene.add(screenBase);
-
-      // BĂNG TẢI 6: Hạt chuẩn từ sàng sang Silo đóng bao (from X=25.6, Y=3.2 to X=28.5, Y=5.2)
-      createConveyorBelt(new THREE.Vector3(25.6, 3.2, 0), new THREE.Vector3(28.5, 5.2, 0), "Băng tải 6");
-
-      // ================= CỤM 7: CỤM SILO ĐÓNG BAO THÀNH PHẨM (X = 29.8) =================
-      const siloGroup = new THREE.Group();
-      siloGroup.position.set(29.8, 0, 0);
-
-      // 4-leg Heavy Column Frame
-      for (let dx of [-1.6, 1.6]) {
-        for (let dz of [-1.6, 1.6]) {
-          const col = new THREE.Mesh(new THREE.BoxGeometry(0.25, 8.0, 0.25), matSteel);
-          col.position.set(dx, 4.0, dz);
-          col.castShadow = true;
-          siloGroup.add(col);
-        }
-      }
-
-      // Storage Silo Cylinder (Purple)
-      const siloCyl = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 4.0, 24), matPurpleSilo);
-      siloCyl.position.y = 8.0;
-      siloCyl.castShadow = true;
-      siloGroup.add(siloCyl);
-
-      // Silo cone bottom
-      const siloCone = new THREE.Mesh(new THREE.ConeGeometry(2.0, 2.4, 24), matPurpleSilo);
-      siloCone.rotation.x = Math.PI;
-      siloCone.position.y = 4.8;
-      siloGroup.add(siloCone);
-
-      // Automatic Bagging Unit Chamber
-      const bagUnit = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.0, 1.8), matSteelDark);
-      bagUnit.position.y = 2.3;
-      siloGroup.add(bagUnit);
-
-      // Roller outfeed conveyor for fertilizer bags
-      const bagOutfeed = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.32, 1.1), matSteel);
-      bagOutfeed.position.set(2.4, 0.85, 0);
-      siloGroup.add(bagOutfeed);
-
-      // Finished bags on outfeed
-      for (let bx of [1.6, 2.8]) {
-        const bag = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.28, 0.65), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 }));
-        bag.position.set(bx, 1.2, 0);
-        siloGroup.add(bag);
-      }
-
-      threeScene.add(siloGroup);
-
-      // ================= OVERHEAD DUST EXTRACTION DUCTWORK & CYCLONES =================
-      buildOverheadDuctwork();
+      // Start animation loop
+      animate3D();
+      window.addEventListener('resize', onWindowResize, false);
     }
 
-    function buildOverheadDuctwork() {
-      // Twin Cyclone Separators on Steel Platform at X = 9, Z = -4.2, Y = 6.0
-      const cycloneGroup = new THREE.Group();
-      cycloneGroup.position.set(9.0, 5.8, -4.2);
-
-      for (let cx of [-1.3, 1.3]) {
-        const cyUpper = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 2.2, 16), matSteel);
-        cyUpper.position.x = cx;
-        cycloneGroup.add(cyUpper);
-
-        const cyCone = new THREE.Mesh(new THREE.ConeGeometry(1.0, 2.4, 16), matSteel);
-        cyCone.rotation.x = Math.PI;
-        cyCone.position.set(cx, -2.3, 0);
-        cycloneGroup.add(cyCone);
-      }
-
-      // Exhaust Blower Fan on top
-      const blower = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.9, 16), matSteelDark);
-      blower.position.set(0, 2.2, 0);
-      cycloneGroup.add(blower);
-
-      threeScene.add(cycloneGroup);
-
-      // Main overhead duct connecting Dryer hood to Cyclones
-      const mainOverheadDuct = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 7.5, 12), matSteel);
-      mainOverheadDuct.position.set(10.5, 7.2, -2.0);
-      mainOverheadDuct.rotation.x = 0.65;
-      threeScene.add(mainOverheadDuct);
+    function reset3DCamera() {
+      setCameraView('overview');
     }
 
-    // Camera preset switcher
     function setCameraView(preset) {
       document.querySelectorAll('.cam-btn').forEach(b => {
         b.classList.remove('bg-cyan-900/40', 'text-cyan-300', 'font-bold');
@@ -1858,8 +1754,8 @@
         if (highlightSpotLight) highlightSpotLight.visible = false;
         if (highlightRing) highlightRing.visible = false;
 
-        camTargetPos.set(0, 15, 34);
-        camTargetLookAt.set(0, 3.2, 0);
+        camTargetPos.set(0, 16, 36);
+        camTargetLookAt.set(1.0, 3.0, 0);
         isCamLerping = true;
       } else if (STATIONS[preset]) {
         const s = STATIONS[preset];
@@ -1883,20 +1779,66 @@
       const btn = document.getElementById('btnPlantPower');
       const txt = document.getElementById('txtPlantPower');
       if (isPlantRunning) {
-        btn.className = "px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1 shadow transition";
-        txt.innerText = "DÂY CHUYỀN CHẠY";
+        if (btn) btn.className = "flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/80 hover:bg-emerald-900 text-emerald-400 border border-emerald-500/40 text-xs font-mono font-bold transition-all shadow-sm";
+        if (txt) txt.innerText = "DÂY CHUYỀN CHẠY";
       } else {
-        btn.className = "px-2.5 py-1 rounded bg-red-600 hover:bg-red-500 text-white font-bold flex items-center gap-1 shadow transition";
-        txt.innerText = "DÂY CHUYỀN DỪNG";
+        if (btn) btn.className = "flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-950/80 hover:bg-rose-900 text-rose-400 border border-rose-500/40 text-xs font-mono font-bold transition-all shadow-sm";
+        if (txt) txt.innerText = "DÂY CHUYỀN DỪNG";
       }
     }
 
-    function changeSpeed(sp) {
-      plantSpeedMultiplier = sp;
+    function changeSpeed(multiplier) {
+      plantSpeedMultiplier = multiplier;
     }
 
-    function reset3DCamera() {
-      setCameraView('overview');
+    function onStepCardClick(cardIndex) {
+      if (selectedCardIndex === cardIndex) {
+        // Toggle off - return to overview
+        selectedCardIndex = null;
+        for (let i = 1; i <= 6; i++) {
+          const el = document.getElementById('stepCard' + i);
+          if (el) el.classList.remove('active');
+        }
+        if (highlightSpotLight) highlightSpotLight.visible = false;
+        if (highlightRing) highlightRing.visible = false;
+
+        camTargetPos.set(0, 16, 36);
+        camTargetLookAt.set(1.0, 3.0, 0);
+        isCamLerping = true;
+
+        document.querySelectorAll('.cam-btn').forEach(b => {
+          b.classList.remove('bg-cyan-900/40', 'text-cyan-300', 'font-bold');
+        });
+        const ovBtn = document.getElementById('btnCamOverview');
+        if (ovBtn) ovBtn.classList.add('bg-cyan-900/40', 'text-cyan-300', 'font-bold');
+        return;
+      }
+
+      selectedCardIndex = cardIndex;
+      for (let i = 1; i <= 6; i++) {
+        const el = document.getElementById('stepCard' + i);
+        if (el) {
+          if (i === cardIndex) el.classList.add('active');
+          else el.classList.remove('active');
+        }
+      }
+
+      const info = STEP_EQUIPMENT_MAP[cardIndex];
+      if (info) {
+        if (highlightSpotLight) {
+          highlightSpotLight.position.set(info.target.x, info.target.y + 11, info.target.z + 4);
+          highlightSpotLight.target.position.copy(info.target);
+          highlightSpotLight.visible = true;
+        }
+        if (highlightRing) {
+          highlightRing.position.set(info.target.x, 0.05, info.target.z);
+          highlightRing.visible = true;
+        }
+
+        camTargetPos.copy(info.cam);
+        camTargetLookAt.copy(info.target);
+        isCamLerping = true;
+      }
     }
 
     // Main 3D Animation Loop with Lerp & Particle Dynamics
@@ -1908,7 +1850,7 @@
       if (isPlantRunning) {
         animClock += delta;
 
-        // 1. Rotate all drum equipment (Granulator, Dryer, Cooler)
+        // 1. Rotate all drum equipment (Granulator, Dryer)
         rotatingDrums.forEach(d => {
           d.rotation.x += 0.02 * plantSpeedMultiplier;
         });
@@ -1920,7 +1862,7 @@
             if (p.progress > 1.0) p.progress -= 1.0;
 
             const currentPos = new THREE.Vector3().lerpVectors(p.start, p.end, p.progress);
-            currentPos.y += 0.22;
+            currentPos.y += 0.20;
             currentPos.z += p.lateralOffset;
             p.mesh.position.copy(currentPos);
           });
@@ -1928,11 +1870,16 @@
 
         // 3. Vibrating screen realistic oscillation
         if (vibratingScreenMesh) {
-          vibratingScreenMesh.position.y = 4.6 + Math.sin(animClock * 32) * 0.035;
-          vibratingScreenMesh.position.x = 24.2 + Math.cos(animClock * 32) * 0.025;
+          vibratingScreenMesh.position.y = 3.6 + Math.sin(animClock * 32) * 0.035;
+          vibratingScreenMesh.position.x = 13.5 + Math.cos(animClock * 32) * 0.025;
         }
 
-        // 4. Highlight Beacon Ring Pulsing Animation
+        // 4. Furnace flame flicker
+        if (furnaceFireLight) {
+          furnaceFireLight.intensity = 2.8 + Math.sin(animClock * 15) * 0.6 + Math.cos(animClock * 23) * 0.4;
+        }
+
+        // 5. Highlight Beacon Ring Pulsing Animation
         if (highlightRing && highlightRing.visible) {
           const s = 1.0 + Math.sin(animClock * 6) * 0.12;
           highlightRing.scale.set(s, s, s);
@@ -1942,6 +1889,7 @@
 
       // Smooth Camera & Target Lerping
       if (isCamLerping) {
+        threeControls.autoRotate = false;
         threeCamera.position.lerp(camTargetPos, 0.08);
         threeControls.target.lerp(camTargetLookAt, 0.08);
         if (threeCamera.position.distanceTo(camTargetPos) < 0.08 &&
@@ -1949,7 +1897,16 @@
           threeCamera.position.copy(camTargetPos);
           threeControls.target.copy(camTargetLookAt);
           isCamLerping = false;
+          if (selectedCardIndex === null) {
+            threeControls.autoRotate = true;
+          }
         }
+      } else if (selectedCardIndex === null) {
+        // Continuous gentle auto-rotation when viewing the overall plant!
+        threeControls.autoRotate = true;
+      } else {
+        // When focused on a specific station, pause auto-rotation
+        threeControls.autoRotate = false;
       }
 
       threeControls.update();
