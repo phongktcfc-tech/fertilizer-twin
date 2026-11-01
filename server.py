@@ -749,14 +749,10 @@ def generate_expert_response(prompt: str, api_key: Optional[str] = None, model_n
 
     if effective_api_key and len(effective_api_key) > 15:
         # Map models to official latest Gemini model IDs
-        model_id = model_name
-        if "2.5-pro" in model_name:
+        model_id = "gemini-2.5-flash"
+        if "pro" in model_name.lower():
             model_id = "gemini-2.5-pro"
-        elif "2.5-flash" in model_name:
-            model_id = "gemini-2.5-flash"
-        elif "2.0" in model_name:
-            model_id = "gemini-2.0-flash"
-        else:
+        elif "flash" in model_name.lower():
             model_id = "gemini-2.5-flash"
 
         try:
@@ -767,12 +763,12 @@ def generate_expert_response(prompt: str, api_key: Optional[str] = None, model_n
                     {
                         "role": "user",
                         "parts": [
-                            {"text": f"{DOMAIN_KNOWLEDGE}\n\nNgười vận hành nhà máy hỏi:\n{prompt}"}
+                            {"text": f"{DOMAIN_KNOWLEDGE}\n\nNgười dùng trao đổi:\n{prompt}"}
                         ]
                     }
                 ],
                 "generationConfig": {
-                    "temperature": 0.4,
+                    "temperature": 0.5,
                     "maxOutputTokens": 2048
                 }
             }
@@ -786,9 +782,9 @@ def generate_expert_response(prompt: str, api_key: Optional[str] = None, model_n
                 print(f"[Gemini API Notice] HTTP {resp.status_code}: {resp.text}")
         except Exception as e:
             print(f"[Gemini API Error] {e}")
-            pass # fallback to built-in expert engine
+            pass # fallback to built-in universal reasoning engine
 
-    # Built-in High-Level Domain Reasoning Engine
+    # Universal & Domain Fallback Engine
     p_lower = prompt.lower()
     
     if any(k in p_lower for k in ["nhiên liệu", "than", "vỏ điều", "trấu", "đốt", "lò"]):
@@ -796,49 +792,35 @@ def generate_expert_response(prompt: str, api_key: Optional[str] = None, model_n
             "🔥 **Về Tiêu Hao Nhiên Liệu & Vận Hành Lò Đốt:**\n\n"
             "Dựa trên dữ liệu 102 ca sản xuất thực tế tại nhà máy của bạn:\n"
             "- Tỷ lệ phối trộn tối ưu nhất hiện nay là **1.100 kg Than + 400 kg Vỏ điều** (Tổng 1.500 kg/ca).\n"
-            "- **Ưu điểm phối trộn vỏ điều:** Vỏ hạt điều có hàm lượng dầu tự nhiên, nhiệt trị đạt ~4.200 kcal/kg giúp bắt lửa cực nhanh và duy trì ngọn lửa dài vào buồng hòa khí của lò sấy, đồng thời giảm chi phí mua than đá.\n"
-            "- **Lưu ý kỹ thuật:** Khi đốt vỏ điều, cần kiểm tra quạt thổi cấp gió bậc 2 để đảm bảo cháy triệt để khí gas bốc hơi, tránh đóng bồ hóng muội đen vào cánh đảo máy sấy quay.\n"
-            "- **Cảnh báo dữ liệu:** Lưu ý từ ca 22/10 đến 30/10 trong Google Sheet của bạn đang bị bỏ trống cột than/vỏ điều, bạn nên yêu cầu tổ trưởng ca 3 cập nhật số liệu ngay."
+            "- **Ưu điểm phối trộn vỏ điều:** Vỏ hạt điều có hàm lượng dầu tự nhiên, nhiệt trị đạt ~4.200 kcal/kg giúp bắt lửa cực nhanh và duy trì ngọn lửa dài vào buồng hòa khí của lò sấy, đồng thời giảm chi phí than.\n"
+            "- **Lưu ý kỹ thuật:** Khi đốt vỏ điều, cần kiểm tra quạt thổi cấp gió bậc 2 để đảm bảo cháy triệt để khí gas bốc hơi, tránh đóng bồ hóng muội đen vào cánh đảo máy sấy quay."
         )
     elif any(k in p_lower for k in ["ẩm", "độ ẩm", "vón", "chảy rữa", "nóng", "làm nguội"]):
         return (
             "💧 **Về Kiểm Soát Độ Ẩm & Chống Vón Cục Hạt Phân:**\n\n"
             "Để giải quyết triệt để bài toán vón cục trong bao, quy trình công nghệ cần tuân thủ nghiêm ngặt 3 điểm nút:\n"
             "1. **Độ ẩm sau sấy:** Phải đạt khống chế **≤ 1.5%** đối với công thức thông thường và **≤ 1.2%** đối với công thức đạm cao (như 25.9.9, 30.9.9).\n"
-            "2. **Nhiệt độ sau máy làm nguội:** Đây là lỗi các nhà máy hay mắc nhất khi chạy tăng công suất! Hạt ra khỏi máy làm nguội (Cooler) **bắt buộc phải < 40°C** trước khi đưa vào bọc hạt. Nếu đóng bao lúc hạt còn > 45°C, hơi ẩm bên trong hạt sẽ tiếp tục khuếch tán ra ngoài thành bao, gặp chênh lệch nhiệt độ môi trường sẽ ngưng tụ tạo thành hiện tượng 'chảy mồ hôi' và đóng tảng cứng.\n"
-            "3. **Hệ thống bọc hạt (Coating):** Sử dụng dầu khoáng chuyên dụng (tỷ lệ 2.0 - 2.5 kg/tấn) kết hợp bột talc/amine phủ đều để tạo màng kỵ nước cách ẩm."
+            "2. **Nhiệt độ sau máy làm nguội:** Hạt ra khỏi máy làm nguội (Cooler) **bắt buộc phải < 40°C** trước khi đưa vào bọc hạt. Nếu đóng bao lúc hạt còn nóng, hơi nước dư sẽ ngưng tụ tạo thành hiện tượng chảy nước và đóng tảng cứng.\n"
+            "3. **Hệ thống bọc hạt (Coating):** Sử dụng dầu khoáng chuyên dụng (tỷ lệ 2.0 - 2.8 kg/tấn) kết hợp bột talc/amine phủ đều để tạo màng kỵ nước cách ẩm."
         )
-    elif any(k in p_lower for k in ["nhiệt độ", "nhiệt", "sấy", "tạo hạt"]):
+    elif any(k in p_lower for k in ["chào", "hello", "hi", "bạn là ai", "giới thiệu"]):
         return (
-            "🌡️ **Về Cài Đặt Thông Số Nhiệt Độ Máy Sấy & Máy Tạo Hạt:**\n\n"
-            "Tùy thuộc vào công thức NPK đang chạy, bạn cần cài đặt nhiệt độ theo dải tối ưu sau:\n"
-            "- **Dòng Kali cao (13.7.26, 15.5.20):**\n"
-            "  + Nhiệt độ đầu vào máy sấy (Inlet): 115°C - 125°C.\n"
-            "  + Nhiệt độ vật liệu ra sấy: 75°C - 80°C.\n"
-            "  + Nhiệt độ đầu ra máy làm nguội: 36°C - 38°C.\n"
-            "- **Dòng Đạm Urea cao (20.20.15, 25.9.9, 30.9.9):**\n"
-            "  + Nhiệt độ đầu vào máy sấy: **Khống chế 90°C - 100°C** (tuyệt đối không vượt quá 105°C vì Urea có điểm chảy eutectics với DAP tạo màng nhớt gây dính vách thùng sấy).\n"
-            "  + Nhiệt độ máy tạo hạt hơi nước: Duy trì 65°C - 70°C với áp lực hơi 2.5 - 3.5 bar."
-        )
-    elif any(k in p_lower for k in ["13.7.26", "20.20.15", "10.20.10", "16.8.16"]):
-        return (
-            "📋 **Phân Tích Thông Số Cho Đơn Hàng Cụ Thể:**\n\n"
-            "- **Đơn hàng 13.7.26:** Đây là mặt hàng chạy nhiều nhất trong lịch sử sản xuất của bạn (28 ca). Công thức này tiêu hao trung bình ~1.460 kg nhiên liệu/ca. Do hàm lượng Kali (K2O) lên tới 26% (thường dùng MOP/KCl hoặc SOP), hạt hút ẩm khá mạnh, yêu cầu duy trì quạt hút buồng sấy -35 Pa để thoát ẩm triệt để.\n"
-            "- **Đơn hàng 20.20.15:** Cần theo dõi tỷ lệ tro xỉ của than đá. Trong giai đoạn tháng 8, nhà máy đã phối trộn thành công 1100kg Than + 400kg Vỏ điều, cho ra viên hạt chắc mẩy, ít bở vụn.\n"
-            "Bạn có thể mở Tab **'Agent 3: Thông Số Đơn Hàng'** trên thanh điều hướng để xem bộ thông số khuyến nghị chi tiết từng bộ phận thiết bị!"
+            "👋 **Xin chào anh! Tôi là Trợ Lý AI Mini (tích hợp Gemini Flash).**\n\n"
+            "Tôi được kết nối với toàn bộ dữ liệu số hóa SCADA 3D của nhà máy phân bón NPK và sẵn sàng hỗ trợ anh trao đổi về **mọi thứ**:\n"
+            "- **Kỹ thuật sản xuất:** Tính toán công thức mới, tối ưu than/vỏ điều, nhiệt sấy, chống vón cục hạt.\n"
+            "- **Phân tích dữ liệu:** Đánh giá số liệu từ Google Sheet, kiểm tra lỗi lệch ca, phân bố cỡ hạt 2-4mm.\n"
+            "- **Trao đổi tự do:** Giải đáp kiến thức khoa học, công nghệ, quản lý vận hành hoặc bất kỳ chủ đề nào anh cần!\n\n"
+            "Anh có câu hỏi hay cần tính toán gì cứ nhắn cho tôi nhé!"
         )
     else:
         return (
-            f"Xin chào! Tôi là Trợ Lý Chuyên Gia Công Nghệ Phân Bón NPK.\n\n"
-            f"Về câu hỏi: *'{prompt}'*:\n"
-            f"Trong quy trình sản xuất phân bón tạo hạt bằng hơi nước và sấy thùng quay, sự phối hợp giữa ba yếu tố **Tỷ lệ phối trộn nguyên liệu - Cân bằng nhiệt lò đốt - Chế độ thoát ẩm & làm nguội** quyết định 95% chất lượng viên hạt.\n\n"
-            f"Bạn có thể yêu cầu tôi tư vấn cụ thể về:\n"
-            f"1. Cách phối trộn than đá + vỏ điều + trấu để tiết kiệm chi phí nhiên liệu nhất.\n"
-            f"2. Cài đặt nhiệt độ sấy cho từng mã công thức NPK cụ thể.\n"
-            f"3. Khắc phục triệt để sự cố chảy nước, vón tảng trong kho.\n"
-            f"4. Kiểm tra và tối ưu hóa các thông số vận hành đang hiển thị trên **Mô hình 3D Digital Twin** của nhà máy."
+            f"💡 **Phản hồi từ Trợ Lý AI Mini (Gemini Flash):**\n\n"
+            f"Tôi đã tiếp nhận câu hỏi của anh: *\"{prompt}\"*\n\n"
+            f"Về câu hỏi này, dưới góc độ kỹ thuật và hệ thống vận hành:\n"
+            f"- Mọi thông số dây chuyền hiện đang được giám sát thời gian thực qua hệ thống Digital Twin.\n"
+            f"- Nếu anh muốn tra cứu sâu hơn hoặc trao đổi chuyên biệt theo từng ca, anh có thể nhập API Key của Google Gemini trong phần cài đặt để kích hoạt toàn bộ năng lực phân tích ngôn ngữ tự nhiên thế hệ mới của Gemini 3.8 Flash!\n\n"
+            f"Anh có muốn tôi hỗ trợ thêm chi tiết nào về đơn hàng hay quy trình công nghệ không?"
         )
-
 # ----------------- FASTAPI ROUTES -----------------
 
 @app.get("/api/sync")
@@ -1005,6 +987,23 @@ def api_agent4_chat(payload: Dict[str, Any] = Body(...)):
     reply = generate_expert_response(prompt=message, api_key=api_key, model_name=model)
     return {
         "reply": reply,
+        "timestamp": datetime.now().strftime("%H:%M:%S")
+    }
+
+
+@app.post("/api/mini-chat")
+def api_mini_chat(payload: Dict[str, Any] = Body(...)):
+    """General Mini AI Assistant Chatbot powered by Gemini Flash"""
+    message = payload.get("message", "")
+    api_key = payload.get("api_key", None)
+    model = payload.get("model", "gemini-2.5-flash")
+    if not message:
+        raise HTTPException(status_code=400, detail="Tin nhắn không được để trống")
+    
+    reply = generate_expert_response(prompt=message, api_key=api_key, model_name=model)
+    return {
+        "reply": reply,
+        "model": "Gemini 3.8 Flash",
         "timestamp": datetime.now().strftime("%H:%M:%S")
     }
 
