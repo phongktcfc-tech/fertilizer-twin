@@ -576,9 +576,30 @@
 
     <!-- ==================== TAB 2: AGENT 2 - THỊ GIÁC MÁY ẢNH MẪU ==================== -->
     <div id="tab-agent2" class="tab-content hidden">
+      <!-- TOP SYNC STRIP: Synchronized with 3D SCADA Active Shift -->
+      <div class="mb-3 p-2.5 rounded-xl bg-[#091120] border border-cyan-500/30 flex flex-wrap items-center justify-between gap-2 text-xs font-mono shadow-sm">
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span class="text-gray-400">ĐỒNG BỘ THEO SCADA:</span>
+          <span id="agent2SyncShiftBadge" class="font-bold text-white px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/40">2026-10-30-Ngày</span>
+          <span class="text-gray-600">|</span>
+          <span class="text-gray-400">ĐƠN HÀNG (SP):</span>
+          <span id="agent2SyncFormulaBadge" class="font-bold text-cyan-400 px-2 py-0.5 rounded bg-gray-900 border border-gray-800">NPK 25.9.9</span>
+          <span class="text-gray-600">|</span>
+          <span class="text-gray-400">TỔ SX:</span>
+          <span id="agent2SyncToBadge" class="font-bold text-white">3</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-[11px]">
+          <span class="text-gray-400">Hoặc chọn nhanh Ca chụp ảnh thật từ Sheet:</span>
+          <select id="agent2PhotoShiftSelect" onchange="loadAgent2Sample(this.value)" class="bg-gray-900 border border-gray-700 text-cyan-300 font-mono text-[11px] rounded px-2 py-1 outline-none">
+            <option value="current">-- Đang đồng bộ Ca SCADA --</option>
+          </select>
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
-        <!-- LEFT 1/3: HERO QUALITY KPI & CONTROLS (SYNCHRONIZED WITH AGENT 1) -->
+        <!-- LEFT 1/3: HERO QUALITY KPI & REAL-TIME BREAKDOWN (SYNCHRONIZED WITH SCADA & AGENT 1) -->
         <div class="bg-[#091120] border border-gray-800 rounded-xl p-4 flex flex-col justify-between">
           <div>
             <!-- Header matching Agent 1 -->
@@ -593,7 +614,7 @@
             </div>
 
             <!-- Big Hero KPI Card (Identical to Agent 1's "Chỉ Số Điền Đầy Đủ") -->
-            <div class="my-4 p-4 rounded-xl bg-gray-950/60 border border-gray-800 text-center">
+            <div class="my-3 p-3.5 rounded-xl bg-gray-950/60 border border-gray-800 text-center">
               <span class="text-xs uppercase text-gray-400 tracking-wider">Chỉ Số Tròn Đều & Ngoại Quan</span>
               <div id="agent2ScoreDisplay" class="text-4xl font-black text-emerald-400 font-mono my-1">94.6%</div>
               <p id="agent2ScoreSubtitle" class="text-xs text-emerald-400 font-medium flex items-center justify-center gap-1.5">
@@ -603,7 +624,7 @@
             </div>
 
             <!-- Telemetry Metrics Breakdown List (Identical to Agent 1's monospace rows) -->
-            <div class="space-y-2 text-xs font-mono">
+            <div class="space-y-1.5 text-xs font-mono">
               <div class="flex justify-between p-2 rounded bg-gray-900/60">
                 <span class="text-gray-300">Độ tròn đều (Sphericity):</span>
                 <span id="agent2Sphericity" class="font-bold text-emerald-400">94.6%</span>
@@ -632,36 +653,41 @@
           </div>
 
           <!-- Quick Sample Selector & File Upload (Animate-UI tactile interactions) -->
-          <div class="mt-4 pt-3 border-t border-gray-800 space-y-2">
-            <span class="text-[11px] text-gray-400 font-mono block">CHỌN MẪU KIỂM ĐỊNH LÔ HÀNG:</span>
+          <div class="mt-3 pt-2.5 border-t border-gray-800 space-y-2">
+            <span class="text-[11px] text-gray-400 font-mono block">CÁC MẪU ĐIỂN HÌNH TỪ SHEET:</span>
             <div class="grid grid-cols-3 gap-1.5 font-mono text-[11px]">
-              <button onclick="loadAgent2Sample('batch_standard')" id="btnSampleStandard" class="sample-btn p-2 rounded-lg bg-cyan-950/70 border border-cyan-500/50 text-cyan-300 font-semibold text-center hover:bg-cyan-900 active:scale-[0.98] transition-all">
+              <button onclick="loadAgent2Sample('batch_standard')" id="btnSampleStandard" class="sample-btn p-1.5 rounded-lg bg-cyan-950/70 border border-cyan-500/50 text-cyan-300 font-semibold text-center hover:bg-cyan-900 active:scale-[0.98] transition-all">
                 Đạt chuẩn
               </button>
-              <button onclick="loadAgent2Sample('batch_high_moisture')" id="btnSampleMoisture" class="sample-btn p-2 rounded-lg bg-gray-900/80 border border-gray-800 text-amber-400 font-semibold text-center hover:bg-gray-800 active:scale-[0.98] transition-all">
+              <button onclick="loadAgent2Sample('batch_high_moisture')" id="btnSampleMoisture" class="sample-btn p-1.5 rounded-lg bg-gray-900/80 border border-gray-800 text-amber-400 font-semibold text-center hover:bg-gray-800 active:scale-[0.98] transition-all">
                 Ẩm cao
               </button>
-              <button onclick="loadAgent2Sample('batch_attrition')" id="btnSampleAttrition" class="sample-btn p-2 rounded-lg bg-gray-900/80 border border-gray-800 text-red-400 font-semibold text-center hover:bg-gray-800 active:scale-[0.98] transition-all">
+              <button onclick="loadAgent2Sample('batch_attrition')" id="btnSampleAttrition" class="sample-btn p-1.5 rounded-lg bg-gray-900/80 border border-gray-800 text-red-400 font-semibold text-center hover:bg-gray-800 active:scale-[0.98] transition-all">
                 Giòn vỡ
               </button>
             </div>
 
-            <label class="w-full mt-2 py-2 bg-gray-800/90 hover:bg-gray-700 text-gray-200 text-xs font-semibold rounded-lg border border-gray-700 transition flex items-center justify-center gap-2 cursor-pointer active:scale-[0.985]">
-              <i data-lucide="upload-cloud" class="w-4 h-4 text-cyan-400"></i>
-              <span>Tải Ảnh Chụp Mới Để Quét AI</span>
+            <label class="w-full py-1.5 bg-gray-800/90 hover:bg-gray-700 text-gray-200 text-xs font-semibold rounded-lg border border-gray-700 transition flex items-center justify-center gap-2 cursor-pointer active:scale-[0.985]">
+              <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>Tải Ảnh Mới Để Quét AI</span>
               <input type="file" id="imageUploader" accept="image/*" onchange="handleImageUpload(event)" class="hidden" />
             </label>
           </div>
         </div>
 
-        <!-- RIGHT 2/3: DETAILED AI INSPECTION VIEWPORT & FINDINGS (MATCHING AGENT 1 RIGHT PANEL) -->
-        <div class="lg:col-span-2 bg-[#091120] border border-gray-800 rounded-xl p-4 flex flex-col justify-between">
-          <div>
+        <!-- RIGHT 2/3: REAL SHEET OPTICAL VIEWPORT + INTERACTIVE GEMINI 2.5 EXPERT CONSOLE -->
+        <div class="lg:col-span-2 space-y-4">
+          
+          <!-- SECTION 1: OPTICAL VIEWPORT & DISTRIBUTION DIAGNOSTICS -->
+          <div class="bg-[#091120] border border-gray-800 rounded-xl p-4">
             <!-- Header matching Agent 1 -->
             <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-800">
               <div>
-                <h3 class="font-bold text-white text-sm">Kết Quả Soi Chi Tiết & Phân Tích Hình Thái Hạt</h3>
-                <p class="text-xs text-gray-400">Khung quét thị giác máy (Computer Vision & Semantic Segmentation)</p>
+                <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                  <i data-lucide="camera" class="w-4 h-4 text-cyan-400"></i>
+                  Ảnh Thực Tế Từ Google Sheet & Kết Quả Phân Tích
+                </h3>
+                <p class="text-xs text-gray-400">Trích xuất trực tiếp từ cột 'Ảnh Mẫu' của bảng tính Do_Diem do</p>
               </div>
               <span id="agent2StatusBadge" class="px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono font-bold flex items-center gap-1.5">
                 <span id="agent2BadgeDot" class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -669,52 +695,48 @@
               </span>
             </div>
 
-            <!-- Content: Optical Inspection Viewport + Diagnostic Cards -->
+            <!-- Optical Viewport + Distribution Bars -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
               <!-- Left Sub-card: Optical Inspection Viewport with Technical HUD Brackets -->
               <div class="flex flex-col">
-                <div class="relative w-full h-64 rounded-xl overflow-hidden border border-gray-700/80 bg-black flex items-center justify-center shadow-inner group">
+                <div class="relative w-full h-56 rounded-xl overflow-hidden border border-gray-700/80 bg-black flex items-center justify-center shadow-inner group">
                   <img id="agent2Image" src="https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=600&auto=format&fit=crop&q=80" alt="Mẫu hạt" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   
                   <!-- HUD Overlays -->
                   <div class="absolute inset-0 bg-gradient-to-b from-cyan-500/10 via-transparent to-cyan-500/10 pointer-events-none"></div>
                   <!-- Corner Brackets -->
-                  <div class="absolute top-3 left-3 border-t-2 border-l-2 border-cyan-400 w-5 h-5 pointer-events-none"></div>
-                  <div class="absolute top-3 right-3 border-t-2 border-r-2 border-cyan-400 w-5 h-5 pointer-events-none"></div>
-                  <div class="absolute bottom-3 left-3 border-b-2 border-l-2 border-cyan-400 w-5 h-5 pointer-events-none"></div>
-                  <div class="absolute bottom-3 right-3 border-b-2 border-r-2 border-cyan-400 w-5 h-5 pointer-events-none"></div>
+                  <div class="absolute top-2.5 left-2.5 border-t-2 border-l-2 border-cyan-400 w-4 h-4 pointer-events-none"></div>
+                  <div class="absolute top-2.5 right-2.5 border-t-2 border-r-2 border-cyan-400 w-4 h-4 pointer-events-none"></div>
+                  <div class="absolute bottom-2.5 left-2.5 border-b-2 border-l-2 border-cyan-400 w-4 h-4 pointer-events-none"></div>
+                  <div class="absolute bottom-2.5 right-2.5 border-b-2 border-r-2 border-cyan-400 w-4 h-4 pointer-events-none"></div>
                   
-                  <!-- Technical Status Overlays -->
-                  <div class="absolute top-3 left-10 text-[9px] font-mono text-cyan-300 bg-black/60 px-1.5 py-0.5 rounded border border-cyan-500/30">
-                    SCAN: CV-PELLETS-v2.4
-                  </div>
-                  <div class="absolute bottom-3 right-10 text-[9px] font-mono text-gray-300 bg-black/60 px-1.5 py-0.5 rounded border border-gray-700">
-                    RES: 1920x1080 HQ
+                  <!-- Source badge -->
+                  <div id="agent2SourceBadge" class="absolute top-2.5 right-8 text-[9px] font-mono text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/40 flex items-center gap-1 font-bold">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> GOOGLE SHEET REAL PHOTO
                   </div>
                   
                   <!-- Scanning line -->
                   <div class="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60 animate-pulse pointer-events-none" style="top: 45%;"></div>
                 </div>
 
-                <div class="mt-2.5 p-2 rounded-lg bg-gray-950/70 border border-gray-800 text-center font-mono">
+                <div class="mt-2 p-1.5 rounded-lg bg-gray-950/70 border border-gray-800 text-center font-mono">
                   <span id="agent2SampleTitle" class="text-xs text-cyan-300 font-bold">Mẫu Hạt NPK 13.7.26 - Lô 2026-10-15 (Đạt Chuẩn)</span>
                 </div>
               </div>
 
-              <!-- Right Sub-card: Particle Distribution Bars & Technical Diagnostic Cards -->
+              <!-- Right Sub-card: Distribution Bars & Surface Evaluation -->
               <div class="space-y-2.5">
                 <!-- Size Distribution Card -->
-                <div class="p-3 rounded-lg bg-gray-950/80 border border-gray-800 text-xs">
-                  <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-gray-800/80">
+                <div class="p-2.5 rounded-lg bg-gray-950/80 border border-gray-800 text-xs">
+                  <div class="flex items-center justify-between pb-1 mb-1.5 border-b border-gray-800/80">
                     <span class="font-bold text-white font-mono flex items-center gap-1.5">
                       <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-cyan-400"></i>
-                      Phân Bố Kích Thước Hạt
+                      Phân Bố Cỡ Hạt Thực Tế
                     </span>
                     <span class="text-[10px] text-gray-400 font-mono">Chuẩn: 2.0 - 4.0 mm</span>
                   </div>
 
-                  <div class="space-y-2">
+                  <div class="space-y-1.5">
                     <div>
                       <div class="flex justify-between text-[11px] mb-0.5">
                         <span class="text-gray-300">2.0 - 4.0 mm (Chuẩn xuất xưởng)</span>
@@ -747,8 +769,8 @@
                   </div>
                 </div>
 
-                <!-- Surface Quality Card (Styled identical to Agent 1 Alert Card) -->
-                <div class="p-3 rounded-lg bg-gray-950/80 border border-gray-800 text-xs">
+                <!-- Surface Quality Card -->
+                <div class="p-2.5 rounded-lg bg-gray-950/80 border border-gray-800 text-xs">
                   <div class="flex items-center justify-between pb-1 mb-1 border-b border-gray-800/60 font-mono">
                     <span class="font-bold text-white flex items-center gap-1.5">
                       <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
@@ -764,24 +786,70 @@
                     </div>
                   </div>
                 </div>
-
-                <!-- Agent Insight Card (Styled identical to Agent 1 Alert Card) -->
-                <div class="p-3 rounded-lg bg-gray-950/80 border border-gray-800 text-xs">
-                  <div class="flex items-center justify-between pb-1 mb-1 border-b border-gray-800/60 font-mono">
-                    <span class="font-bold text-cyan-400 flex items-center gap-1.5">
-                      <i data-lucide="cpu" class="w-3.5 h-3.5 text-cyan-400"></i>
-                      Nhận Định Chuyên Gia AI (Agent 2)
-                    </span>
-                    <span class="text-[10px] text-gray-400">Vision Model</span>
-                  </div>
-                  <p id="agent2AgentNotes" class="text-gray-300 text-[11px] leading-relaxed mt-1">
-                    Kích thước viên hạt đồng đều cao, màu xám ánh xanh đặc trưng của SOP. Không có hiện tượng kết tinh bột trắng trên bề mặt.
-                  </p>
-                </div>
               </div>
-
             </div>
           </div>
+
+          <!-- SECTION 2: INTERACTIVE AI EXPERT CONSULTATION CONSOLE (GEMINI 2.5) -->
+          <div class="bg-[#091120] border border-cyan-500/30 rounded-xl p-4 shadow-lg">
+            <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-gray-800">
+              <div class="flex items-center gap-2">
+                <div class="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400">
+                  <i data-lucide="bot" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                    Trao Đổi Trực Tiếp Với Chuyên Gia AI Công Nghệ
+                    <span class="text-[10px] font-mono text-cyan-400 bg-cyan-950/80 border border-cyan-500/40 px-2 py-0.5 rounded font-normal">Gemini 2.5 Flash / Pro</span>
+                  </h3>
+                  <p class="text-xs text-gray-400">Tư vấn nhiệt ẩm, gợi ý thông số công nghệ khi có đơn hàng mới cần chạy</p>
+                </div>
+              </div>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-mono font-bold flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> ONLINE
+              </span>
+            </div>
+
+            <!-- Quick Suggestion Question Pills -->
+            <div class="mb-3">
+              <span class="text-[11px] font-mono text-gray-400 block mb-1.5">GỢI Ý CÂU HỎI NHANH (BẤM ĐỂ HỎI):</span>
+              <div class="flex flex-wrap gap-1.5 text-xs">
+                <button onclick="askExpertPrompt('Gợi ý toàn bộ thông số công nghệ chuẩn để chạy đơn hàng mới NPK 16-16-8')" class="prompt-chip px-2.5 py-1 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 hover:border-cyan-500/50 transition-all text-left flex items-center gap-1 active:scale-[0.98]">
+                  <span>🧪</span> Gợi ý thông số đơn mới <b>NPK 16-16-8</b>
+                </button>
+                <button onclick="askExpertPrompt('Tối ưu nhiệt sấy, lưu lượng hơi lò và lượng than cho đơn hàng NPK 20-20-15')" class="prompt-chip px-2.5 py-1 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 hover:border-cyan-500/50 transition-all text-left flex items-center gap-1 active:scale-[0.98]">
+                  <span>🌡️</span> Tối ưu nhiệt sấy đơn <b>NPK 20-20-15</b>
+                </button>
+                <button onclick="askExpertPrompt('Độ ẩm hạt ra sấy vượt 2.0% thì cần can thiệp thông số lò và máy vê viên thế nào?')" class="prompt-chip px-2.5 py-1 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 hover:border-cyan-500/50 transition-all text-left flex items-center gap-1 active:scale-[0.98]">
+                  <span>💧</span> Xử lý khi độ ẩm ra sấy &gt; 2.0%
+                </button>
+                <button onclick="askExpertPrompt('Tỷ lệ bột mịn lọt sàng < 2mm cao, làm sao để tăng hạt chuẩn 2-4mm lên trên 90%?')" class="prompt-chip px-2.5 py-1 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 hover:border-cyan-500/50 transition-all text-left flex items-center gap-1 active:scale-[0.98]">
+                  <span>⚙️</span> Tăng hạt chuẩn 2-4mm lên &gt; 90%
+                </button>
+              </div>
+            </div>
+
+            <!-- Chat Messages Log Box -->
+            <div id="agent2ChatLog" class="p-3 rounded-xl bg-gray-950/80 border border-gray-800 max-h-64 overflow-y-auto space-y-3 mb-3 text-xs leading-relaxed">
+              <div class="flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-full bg-cyan-950 border border-cyan-500/40 flex items-center justify-center flex-shrink-0 text-cyan-400 text-xs font-bold">AI</div>
+                <div class="bg-gray-900/90 border border-gray-800 p-3 rounded-xl rounded-tl-none text-gray-200">
+                  <p class="font-bold text-cyan-300 text-xs mb-1">Chuyên Gia Trưởng Công Nghệ Phân Bón NPK:</p>
+                  <p>Xin chào anh! Tôi đã nắm thông tin đơn hàng hiện tại của ca sản xuất. Nếu nhà máy có **đơn hàng mới cần chạy**, anh hãy nhập công thức (ví dụ: *NPK 16-16-8, NPK 20-20-15, NPK 17-7-17...*) hoặc bấm vào các câu hỏi gợi ý bên trên. Tôi sẽ tính toán và đề xuất ngay toàn bộ thông số chuẩn cho từng trạm: nhiệt tạo hạt, nhiệt sấy, lưu lượng hơi lò, lượng nhiên liệu và giải pháp hạt bóng tròn!</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chat Input Bar -->
+            <form id="agent2ChatForm" onsubmit="handleAgent2ChatSubmit(event)" class="flex items-center gap-2">
+              <input type="text" id="agent2ChatInput" placeholder="Nhập câu hỏi hoặc công thức đơn hàng mới cần chạy (ví dụ: đơn hàng NPK 16-16-8 cần nhiệt sấy bao nhiêu?)..." class="flex-1 bg-gray-950 border border-gray-700 focus:border-cyan-500 text-white text-xs rounded-lg px-3 py-2 outline-none transition font-sans" />
+              <button type="submit" id="btnAgent2ChatSend" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 active:scale-[0.98] text-white font-bold text-xs rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                <span>Gửi Chuyên Gia</span>
+              </button>
+            </form>
+          </div>
+
         </div>
 
       </div>
@@ -1039,6 +1107,8 @@
 
       await triggerSync();
       startAutoSync();
+      loadAgent2PhotographedShiftsList();
+
     });
 
     function changeAutoSync(val) {
@@ -1958,28 +2028,54 @@
       } catch (e) {}
     }
 
+    // ==================== AGENT 2 ENHANCED ENGINE: SCADA SYNC, REAL SHEET PHOTOS & GEMINI 2.5 ====================
+    let agent2PhotographedShifts = [];
+
+    // Sync Agent 2 whenever shift changes or on startup
+    async function syncAgent2WithCurrentShift(shift) {
+      if (!shift) return;
+      const maCa = shift.Ma_Ca || shift;
+      const formula = shift.Cong_thuc_SP || "NPK";
+      const toSx = shift.To_SX || shift["Tổ Sản Xuất"] || "3";
+
+      // Update sync badges
+      const badgeShift = document.getElementById('agent2SyncShiftBadge');
+      if (badgeShift) badgeShift.innerText = maCa;
+      const badgeFormula = document.getElementById('agent2SyncFormulaBadge');
+      if (badgeFormula) badgeFormula.innerText = formula;
+      const badgeTo = document.getElementById('agent2SyncToBadge');
+      if (badgeTo) badgeTo.innerText = toSx;
+
+      await loadAgent2Sample(maCa);
+    }
+
+    async function loadAgent2PhotographedShiftsList() {
+      try {
+        const res = await fetch('/api/agent2/real-images');
+        if (res.ok) {
+          const list = await res.json();
+          agent2PhotographedShifts = list;
+          const selectEl = document.getElementById('agent2PhotoShiftSelect');
+          if (selectEl && list.length > 0) {
+            selectEl.innerHTML = '<option value="current">-- Đang đồng bộ Ca SCADA --</option>' + 
+              list.map(s => `<option value="${s.Ma_Ca}">📸 ${s.Ma_Ca} (${s.Cong_thuc_SP}) - Ẩm ${s.Do_am_hat_ra_say || '1.2'}%</option>`).join('');
+          }
+        }
+      } catch (e) {
+        console.error("Error loading photo shifts:", e);
+      }
+    }
+
     async function loadAgent2Sample(sampleId) {
       try {
-        // Highlight active sample button
-        ['btnSampleStandard', 'btnSampleMoisture', 'btnSampleAttrition'].forEach(id => {
-          const btn = document.getElementById(id);
-          if (btn) {
-            btn.classList.remove('bg-cyan-950/70', 'border-cyan-500/50', 'text-cyan-300');
-            btn.classList.add('bg-gray-900/80', 'border-gray-800');
-          }
-        });
-        const activeBtnMap = {
-          'batch_standard': 'btnSampleStandard',
-          'batch_high_moisture': 'btnSampleMoisture',
-          'batch_attrition': 'btnSampleAttrition'
-        };
-        const activeBtn = document.getElementById(activeBtnMap[sampleId]);
-        if (activeBtn) {
-          activeBtn.classList.remove('bg-gray-900/80', 'border-gray-800');
-          activeBtn.classList.add('bg-cyan-950/70', 'border-cyan-500/50', 'text-cyan-300');
+        let endpoint = `/api/agent2/sample/${sampleId}`;
+        if (sampleId && sampleId !== 'batch_standard' && sampleId !== 'batch_high_moisture' && sampleId !== 'batch_attrition' && sampleId !== 'current') {
+          endpoint = `/api/agent2/shift/${encodeURIComponent(sampleId)}`;
+        } else if (sampleId === 'current' && currentShift) {
+          endpoint = `/api/agent2/shift/${encodeURIComponent(currentShift.Ma_Ca)}`;
         }
 
-        const res = await fetch(`/api/agent2/sample/${sampleId}`);
+        const res = await fetch(endpoint);
         const data = await res.json();
 
         // Update Hero Score & Subtitle
@@ -2053,18 +2149,115 @@
         const surfaceEl = document.getElementById('agent2SurfaceQuality');
         if (surfaceEl) surfaceEl.innerText = data.surface_quality;
 
-        const notesEl = document.getElementById('agent2AgentNotes');
-        if (notesEl) notesEl.innerText = data.agent_notes || data.surface_quality;
-
         const titleEl = document.getElementById('agent2SampleTitle');
         if (titleEl) titleEl.innerText = data.sample_name;
 
         const imgEl = document.getElementById('agent2Image');
         if (imgEl && data.image_url) imgEl.src = data.image_url;
 
+        // Sync header badges
+        if (data.ma_ca) {
+          const badgeShift = document.getElementById('agent2SyncShiftBadge');
+          if (badgeShift) badgeShift.innerText = data.ma_ca;
+          const badgeFormula = document.getElementById('agent2SyncFormulaBadge');
+          if (badgeFormula) badgeFormula.innerText = data.formula;
+        }
+
         lucide.createIcons();
       } catch(e) {
         console.error("Error loading Agent 2 sample:", e);
+      }
+    }
+
+    // Direct Gemini 2.5 Expert Consultation Functions
+    function askExpertPrompt(promptText) {
+      const input = document.getElementById('agent2ChatInput');
+      if (input) {
+        input.value = promptText;
+        handleAgent2ChatSubmit(new Event('submit'));
+      }
+    }
+
+    async function handleAgent2ChatSubmit(event) {
+      if (event) event.preventDefault();
+      const input = document.getElementById('agent2ChatInput');
+      const text = input ? input.value.trim() : '';
+      if (!text) return;
+
+      const chatLog = document.getElementById('agent2ChatLog');
+      const sendBtn = document.getElementById('btnAgent2ChatSend');
+
+      // Append user message
+      const userMsgHtml = `
+        <div class="flex items-start gap-2.5 justify-end">
+          <div class="bg-cyan-950/80 border border-cyan-500/30 p-2.5 rounded-xl rounded-tr-none text-cyan-100 max-w-[85%]">
+            <p class="font-bold text-[11px] text-cyan-400 mb-0.5">Kỹ sư / Quản đốc vận hành:</p>
+            <p>${text}</p>
+          </div>
+          <div class="w-6 h-6 rounded-full bg-cyan-700 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">KS</div>
+        </div>
+      `;
+      chatLog.insertAdjacentHTML('beforeend', userMsgHtml);
+      input.value = '';
+      chatLog.scrollTop = chatLog.scrollHeight;
+
+      // Loading bubble
+      const loadingId = 'loading_' + Date.now();
+      const loadingHtml = `
+        <div id="${loadingId}" class="flex items-start gap-2.5">
+          <div class="w-6 h-6 rounded-full bg-cyan-950 border border-cyan-500/40 flex items-center justify-center flex-shrink-0 text-cyan-400 text-xs font-bold">AI</div>
+          <div class="bg-gray-900/90 border border-gray-800 p-2.5 rounded-xl rounded-tl-none text-gray-400 flex items-center gap-2">
+            <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span>Chuyên gia AI đang phân tích đơn hàng và tính toán thông số công nghệ...</span>
+          </div>
+        </div>
+      `;
+      chatLog.insertAdjacentHTML('beforeend', loadingHtml);
+      chatLog.scrollTop = chatLog.scrollHeight;
+      if (sendBtn) sendBtn.disabled = true;
+
+      try {
+        const formula = document.getElementById('agent2SyncFormulaBadge')?.innerText || 'NPK';
+        const apiKey = localStorage.getItem('gemini_api_key') || null;
+
+        const res = await fetch('/api/agent2/consult', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            formula: formula,
+            api_key: apiKey,
+            model: "gemini-2.5-flash"
+          })
+        });
+
+        const data = await res.json();
+        const loadEl = document.getElementById(loadingId);
+        if (loadEl) loadEl.remove();
+
+        const formattedReply = marked ? marked.parse(data.reply) : data.reply.replace(/\n/g, '<br>');
+
+        const aiMsgHtml = `
+          <div class="flex items-start gap-2.5">
+            <div class="w-6 h-6 rounded-full bg-cyan-950 border border-cyan-500/40 flex items-center justify-center flex-shrink-0 text-cyan-400 text-xs font-bold">AI</div>
+            <div class="bg-gray-900/95 border border-gray-800 p-3 rounded-xl rounded-tl-none text-gray-200 max-w-[90%] leading-relaxed prose prose-invert text-xs">
+              <div class="flex items-center justify-between pb-1 mb-1.5 border-b border-gray-800 text-[10px] text-cyan-400 font-mono">
+                <span class="font-bold">Chuyên Gia Trưởng Công Nghệ NPK</span>
+                <span>${data.timestamp || ''} • Model: ${data.model_used || 'Gemini 2.5'}</span>
+              </div>
+              <div>${formattedReply}</div>
+            </div>
+          </div>
+        `;
+        chatLog.insertAdjacentHTML('beforeend', aiMsgHtml);
+        chatLog.scrollTop = chatLog.scrollHeight;
+      } catch (err) {
+        const loadEl = document.getElementById(loadingId);
+        if (loadEl) loadEl.remove();
+        chatLog.insertAdjacentHTML('beforeend', `<div class="p-2 rounded bg-red-950/40 text-red-400 border border-red-500/30 text-xs">Lỗi kết nối tới Chuyên Gia AI: ${err.message}</div>`);
+      } finally {
+        if (sendBtn) sendBtn.disabled = false;
+        lucide.createIcons();
       }
     }
 
@@ -2085,11 +2278,10 @@
           const res = await fetch('/api/agent2/custom-inspect', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: json = JSON.stringify({ image_url: base64Image, batch_name: file.name })
+            body: JSON.stringify({ image_url: base64Image, batch_name: file.name })
           });
           if (res.ok) {
             const data = await res.json();
-            // Re-use display logic with custom data
             const scoreEl = document.getElementById('agent2ScoreDisplay');
             if (scoreEl) scoreEl.innerText = `${data.sphericity_index}%`;
             
@@ -2104,9 +2296,6 @@
 
             const surfaceEl = document.getElementById('agent2SurfaceQuality');
             if (surfaceEl) surfaceEl.innerText = data.surface_quality;
-
-            const notesEl = document.getElementById('agent2AgentNotes');
-            if (notesEl) notesEl.innerText = `Ảnh chụp thực tế: Phân bố cỡ hạt đồng đều, bề mặt khô ráo đạt tiêu chuẩn xuất kho.`;
 
             if (titleEl) titleEl.innerText = `Mẫu Tải Lên: ${file.name} - Đã Phân Tích`;
           }
