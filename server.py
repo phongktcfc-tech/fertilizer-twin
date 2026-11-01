@@ -803,23 +803,24 @@ def generate_expert_response(prompt: str, api_key: Optional[str] = None, model_n
             "2. **Nhiệt độ sau máy làm nguội:** Hạt ra khỏi máy làm nguội (Cooler) **bắt buộc phải < 40°C** trước khi đưa vào bọc hạt. Nếu đóng bao lúc hạt còn nóng, hơi nước dư sẽ ngưng tụ tạo thành hiện tượng chảy nước và đóng tảng cứng.\n"
             "3. **Hệ thống bọc hạt (Coating):** Sử dụng dầu khoáng chuyên dụng (tỷ lệ 2.0 - 2.8 kg/tấn) kết hợp bột talc/amine phủ đều để tạo màng kỵ nước cách ẩm."
         )
-    elif any(k in p_lower for k in ["chào", "hello", "hi", "bạn là ai", "giới thiệu"]):
+    elif any(k in p_lower for k in ["chào", "hello", "hi", "bạn là ai", "giới thiệu", "giúp gì", "giúp", "làm gì", "hỗ trợ", "chức năng", "làm được gì"]):
         return (
             "👋 **Xin chào anh! Tôi là Trợ Lý AI Mini (tích hợp Gemini Flash).**\n\n"
-            "Tôi được kết nối với toàn bộ dữ liệu số hóa SCADA 3D của nhà máy phân bón NPK và sẵn sàng hỗ trợ anh trao đổi về **mọi thứ**:\n"
-            "- **Kỹ thuật sản xuất:** Tính toán công thức mới, tối ưu than/vỏ điều, nhiệt sấy, chống vón cục hạt.\n"
-            "- **Phân tích dữ liệu:** Đánh giá số liệu từ Google Sheet, kiểm tra lỗi lệch ca, phân bố cỡ hạt 2-4mm.\n"
-            "- **Trao đổi tự do:** Giải đáp kiến thức khoa học, công nghệ, quản lý vận hành hoặc bất kỳ chủ đề nào anh cần!\n\n"
-            "Anh có câu hỏi hay cần tính toán gì cứ nhắn cho tôi nhé!"
+            "Tôi là trợ lý ảo đồng hành cùng hệ thống SCADA 3D & Digital Twin của nhà máy. Tôi có thể hỗ trợ anh các việc sau:\n\n"
+            "1. 📊 **Tra cứu & Phân tích 102 ca sản xuất:** Báo cáo nhanh độ ẩm, nhiệt độ sấy, sản lượng, tỷ lệ đạt hạt 2-4mm theo thời gian thực từ Google Sheet.\n"
+            "2. 🔥 **Tối ưu nhiên liệu lò đốt:** Tính toán tỷ lệ phối than đá + vỏ hạt điều (chuẩn 1.100 kg than + 400 kg vỏ điều/ca) để tiết kiệm chi phí.\n"
+            "3. 🧪 **Tư vấn công nghệ đơn hàng mới:** Gợi ý nhiệt độ buồng đốt, nhiệt độ gió cấp, kiểm soát chảy rữa hạt khi chạy các dòng đạm cao (NPK 25.9.9, 30.9.9).\n"
+            "4. 💬 **Trao đổi kiến thức tự do:** Giải đáp mọi câu hỏi kỹ thuật, quy trình hóa lý phân bón hoặc bất kỳ vấn đề nào anh cần trao đổi.\n\n"
+            "Anh có thể gõ câu hỏi trực tiếp hoặc bấm các nút gợi ý nhanh bên dưới để tôi hỗ trợ ngay nhé!"
         )
     else:
         return (
-            f"💡 **Phản hồi từ Trợ Lý AI Mini (Gemini Flash):**\n\n"
-            f"Tôi đã tiếp nhận câu hỏi của anh: *\"{prompt}\"*\n\n"
-            f"Về câu hỏi này, dưới góc độ kỹ thuật và hệ thống vận hành:\n"
-            f"- Mọi thông số dây chuyền hiện đang được giám sát thời gian thực qua hệ thống Digital Twin.\n"
-            f"- Nếu anh muốn tra cứu sâu hơn hoặc trao đổi chuyên biệt theo từng ca, anh có thể nhập API Key của Google Gemini trong phần cài đặt để kích hoạt toàn bộ năng lực phân tích ngôn ngữ tự nhiên thế hệ mới của Gemini 3.8 Flash!\n\n"
-            f"Anh có muốn tôi hỗ trợ thêm chi tiết nào về đơn hàng hay quy trình công nghệ không?"
+            f"💡 **Tư vấn từ Trợ Lý AI Nhà Máy:**\n\n"
+            f"Tôi đã tiếp nhận nội dung trao đổi của anh: *\"{prompt}\"*\n\n"
+            f"📌 **Gợi ý xử lý từ hệ thống Digital Twin:**\n"
+            f"- Để tra cứu thông số kỹ thuật (lò đốt than/vỏ điều, máy vê viên, nhiệt sấy, độ ẩm, cỡ hạt), anh có thể nhập câu hỏi cụ thể hoặc chọn ca trên thanh SCADA phía trên.\n"
+            f"- Nếu anh muốn trò chuyện tự do mở rộng (như một mô hình ngôn ngữ lớn tổng quát mọi chủ đề), anh có thể bấm biểu tượng 🔑 (Chìa khóa) ở góc trên để kết nối trực tiếp Google Gemini API Key hoàn toàn miễn phí.\n\n"
+            f"Anh cần tôi tra cứu hay tính toán số liệu nào ngay bây giờ không?"
         )
 # ----------------- FASTAPI ROUTES -----------------
 
