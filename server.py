@@ -326,27 +326,34 @@ def run_agent_2_visual_inspection(target_key: str = "current") -> Dict[str, Any]
                 dd_match = p
                 break
 
-    # Extract actual measurements
-    formula = (dd_match.get("Cong_thuc_SP") if dd_match else (target_shift.get("Cong_thuc_SP") if target_shift else "NPK 13.7.26")) or "NPK 13.7.26"
-    ma_ca = (dd_match.get("Ma_Ca") if dd_match else (target_shift.get("Ma_Ca") if target_shift else "2026-07-31-Ngày")) or "2026-07-31-Ngày"
+    # Extract actual measurements & metadata
+    formula = (target_shift.get("Cong_thuc_SP") if target_shift else (dd_match.get("Cong_thuc_SP") if dd_match else "25.9.9")) or "25.9.9"
+    ma_ca = (target_shift.get("Ma_Ca") if target_shift else (dd_match.get("Ma_Ca") if dd_match else "2026-10-30-Ngày")) or "2026-10-30-Ngày"
+    ngay = (target_shift.get("Ngay") if target_shift else (dd_match.get("Ngay") if dd_match else "30/10/2026")) or "30/10/2026"
+    ca_name = (target_shift.get("Ca") if target_shift else (dd_match.get("Ca") if dd_match else "Ngày")) or "Ngày"
+    to_sx = (target_shift.get("To_SX") if target_shift else (dd_match.get("Tổ Sản Xuất") if dd_match else "3")) or "3"
     
     # Real Image from Google Sheet
     img_url = (dd_match.get("Image_Url") if dd_match and dd_match.get("Image_Url") else None)
+    photo_desc = f"Ảnh chụp thực tế ca {ma_ca}"
     if not img_url:
         # Match another photographed shift with same formula
         for p in photographed_shifts_cache:
             if p.get("Cong_thuc_SP") == formula and p.get("Image_Url"):
                 img_url = p["Image_Url"]
+                photo_desc = f"Ảnh mẫu đối sánh công thức NPK {formula}"
                 break
     if not img_url and photographed_shifts_cache:
         img_url = photographed_shifts_cache[0]["Image_Url"]
+        photo_desc = f"Ảnh mẫu chuẩn đối sánh sản xuất NPK"
     if not img_url:
         img_url = fallback_photo
+        photo_desc = "Ảnh vi quang mẫu phân bón NPK"
 
-    # Sizing
-    std_pct = dd_match.get("Kich_thuoc_2_4mm") if dd_match and dd_match.get("Kich_thuoc_2_4mm") is not None else 88.5
-    under_pct = dd_match.get("Kich_thuoc_duoi_2mm") if dd_match and dd_match.get("Kich_thuoc_duoi_2mm") is not None else 5.8
-    over_pct = dd_match.get("Kich_thuoc_tren_4mm") if dd_match and dd_match.get("Kich_thuoc_tren_4mm") is not None else 5.7
+    # Sizing measurements
+    std_pct = dd_match.get("Kich_thuoc_2_4mm") if dd_match and dd_match.get("Kich_thuoc_2_4mm") is not None else 92.4
+    under_pct = dd_match.get("Kich_thuoc_duoi_2mm") if dd_match and dd_match.get("Kich_thuoc_duoi_2mm") is not None else 4.8
+    over_pct = dd_match.get("Kich_thuoc_tren_4mm") if dd_match and dd_match.get("Kich_thuoc_tren_4mm") is not None else 2.8
 
     # Ensure total adds to ~100
     if std_pct + under_pct + over_pct == 0:
@@ -359,30 +366,57 @@ def run_agent_2_visual_inspection(target_key: str = "current") -> Dict[str, Any]
 
     sphericity = round(min(98.5, max(72.0, 75.0 + (std_pct * 0.22) - (max(0, moist - 1.5) * 6.0))), 1)
 
+    is_high_n = formula.startswith("25") or formula.startswith("30")
+    gran_temp = 54 if is_high_n else 65
+    dryer_inlet = 70 if is_high_n else 115
+    dryer_outlet = 65 if is_high_n else 75
+
     if moist > 2.2:
         status = "WARNING"
         status_text = "CẢNH BÁO: ĐỘ ẨM HẠT CAO"
         surface = f"Bề mặt ẩm dính ({moist}%), nguy cơ dính bết lưới sàng & vón cục"
         caking = "RẤT CAO (Cần tăng nhiệt sấy)"
-        notes = f"Độ ẩm thực tế của ca {ma_ca} là {moist}%, vượt mức chuẩn 1.5%. Đề xuất tăng nhiệt khí vào sấy thêm 10-15°C và duy trì áp suất lò hơi 0.5 - 0.7 MPa."
-    elif under_pct > 35.0:
+        sieve_status = "CẢNH BÁO NGHẼN LƯỚI"
+        sieve_detail = f"Hạt hữu dụng 2-4mm đạt {std_pct}%. Do độ ẩm cao ({moist}%), hạt mềm dễ dính bết tầng lưới 2mm. Cần kiểm tra bi cao su đập rung làm sạch mặt sàng."
+        morph_detail = f"Độ tròn đạt {sphericity}%. Mềm ẩm dẫn tới biến dạng nhẹ khi va đập qua cụm gàu nâng, nguy cơ hình thành hạt méo hoặc kết dính hạt đôi."
+        coat_detail = f"Độ ẩm ra sấy {moist}% vượt ngưỡng an toàn (<=1.5%). Lớp dầu chống vón bị suy giảm bám dính, nguy cơ tái hòa tan muối đạm tạo cầu tinh thể vón cục khi xếp pallet."
+        gran_action = f"Giảm 10-15% lưu lượng nước/hơi phun máy vê viên (giữ nhiệt tạo hạt ~{gran_temp}°C)."
+        dryer_action = f"Tăng nhiệt khí vào sấy lên {dryer_inlet + 10}°C, kiểm tra quạt hút buồng sấy duy trì áp suất âm -25 Pa để tăng tốc bốc hơi nước."
+        cooler_action = "Tăng công suất quạt làm nguội để hạt hạ dưới 38°C trước khi đóng bao bì kín."
+    elif under_pct > 30.0:
         status = "CRITICAL"
         status_text = "CẢNH BÁO: HẠT BỊ GIÒN VỠ / LỌT SÀNG CAO"
         surface = f"Tỷ lệ bột mịn lọt sàng cao ({under_pct}%), phân rã cơ học"
         caking = "Thấp nhưng tỷ lệ hao hụt cao"
-        notes = f"Ca {ma_ca} ghi nhận bột mịn lọt sàng < 2mm là {under_pct}%. Cần kiểm tra độ ẩm hỗn hợp tạo hạt và nhiệt độ vùng sấy sơ bộ tránh gây sốc nhiệt làm vỡ hạt."
+        sieve_status = "LỆCH TỶ LỆ HẠT"
+        sieve_detail = f"Tỷ lệ bột mịn <2mm chiếm {under_pct}% (vượt chuẩn <10%). Dòng bột hồi lưu về đầu máy vê viên quá tải, gây mất cân bằng nhiệt ẩm buồng tạo hạt."
+        morph_detail = f"Độ tròn đạt {sphericity}%. Hạt bị rỗ xốp bề mặt do bốc hơi ẩm quá nhanh hoặc thiếu liên kết dẻo, gây vỡ vụn khi qua sàng quay rung."
+        coat_detail = f"Độ ẩm hạt rất khô ({moist}%), tuy nhiên lượng bột mịn bám dính bề mặt tiêu tốn màng dầu bao bọc, làm giảm độ bóng ngoại quan."
+        gran_action = f"Tăng nhẹ dung dịch chất kết dính máy tạo hạt, kiểm soát góc nghiêng thùng để hạt có đủ thời gian cuộn tròn nén chặt."
+        dryer_action = f"Giảm nhiệt độ sấy vùng đầu vào để tránh hiện tượng sốc nhiệt (flash drying) làm nứt vỡ hạt."
+        cooler_action = "Kiểm tra hệ thống cyclone thu hồi bụi để không phát tán ra môi trường đóng bao."
     else:
         status = "PASSED"
         status_text = "ĐẠT TIÊU CHUẨN XUẤT XƯỞNG"
         surface = "Bóng đều, màng bao chống vón phủ kín, khô ráo"
         caking = "Thấp (An toàn lưu kho 6 tháng)"
-        notes = f"Đơn hàng {formula} tại ca {ma_ca} vận hành rất ổn định. Kích thước chuẩn 2-4mm đạt {std_pct}%, độ ẩm đạt {moist}%, thỏa mãn yêu cầu xuất xưởng."
+        sieve_status = "ĐẠT TIÊU CHUẨN"
+        sieve_detail = f"Tỷ lệ hạt thương phẩm 2-4mm đạt {std_pct}% (chuẩn >90%). Hạt quá cỡ {over_pct}% hồi lưu máy nghiền đập và hạt mịn {under_pct}% hồi lưu tạo hạt hoạt động cân bằng hoàn hảo."
+        morph_detail = f"Độ cầu tròn đạt {sphericity}%. Cấu trúc nén chặt cơ học cao, bề mặt nhẵn bóng, hệ số chảy tự do (Angle of Repose) đạt chuẩn tối ưu cho cụm cân đóng bao."
+        coat_detail = f"Độ ẩm ra sấy kiểm soát lý tưởng ở mức {moist}% (chuẩn <=1.5%). Lớp màng dầu chống vón (Amine 0.18%) bọc kín, kháng ẩm mao dẫn bảo quản kho trên 6 tháng."
+        gran_action = f"Duy trì nhiệt máy tạo hạt ở {gran_temp}°C, lưu lượng phun dịch kết dính ổn định."
+        dryer_action = f"Duy trì nhiệt khí vào {dryer_inlet}°C, nhiệt khí ra {dryer_outlet}°C, áp suất buồng hút -25 Pa."
+        cooler_action = "Nhiệt độ hạt hạ xuống < 40°C trước khi cấp vào silo cân đóng bao tự động."
 
     return {
         "sample_name": f"Đơn Hàng: {formula} (Ca {ma_ca})",
         "ma_ca": ma_ca,
+        "ngay": ngay,
+        "ca": ca_name,
+        "to_sx": to_sx,
         "formula": formula,
         "image_url": img_url,
+        "photo_description": photo_desc,
         "is_real_sheet_photo": bool(dd_match and dd_match.get("Image_Url")),
         "sphericity_index": sphericity,
         "size_distribution": {
@@ -395,9 +429,37 @@ def run_agent_2_visual_inspection(target_key: str = "current") -> Dict[str, Any]
         "caking_risk": caking,
         "status": status,
         "status_text": status_text,
-        "agent_notes": notes
+        "tech_eval": {
+            "sieve": {
+                "title": "Phân Bố Cỡ Hạt & Cân Bằng Hồi Lưu",
+                "std": f"{std_pct}% (2.0 - 4.0 mm)",
+                "over": f"{over_pct}% (> 4.0 mm)",
+                "under": f"{under_pct}% (< 2.0 mm)",
+                "status": sieve_status,
+                "detail": sieve_detail
+            },
+            "morphology": {
+                "title": "Hình Thái & Độ Cầu Tròn (Sphericity)",
+                "sphericity": f"{sphericity}%",
+                "density": "1.05 - 1.08 kg/L (Nén chặt)",
+                "status": "RẤT TỐT" if sphericity >= 88 else "TRUNG BÌNH",
+                "detail": morph_detail
+            },
+            "coating": {
+                "title": "Độ Ẩm Ra Sấy & Màng Bao Chống Vón",
+                "moisture": f"{moist}%",
+                "threshold": "< 1.50% (Tiêu chuẩn)",
+                "status": "AN TOÀN" if moist <= 1.8 else "NGUY CƠ VÓN",
+                "detail": coat_detail
+            },
+            "operation": {
+                "title": "Khuyến Nghị Điều Chỉnh Vận Hành Cụm Thiết Bị",
+                "granulator": gran_action,
+                "dryer": dryer_action,
+                "cooler": cooler_action
+            }
+        }
     }
-
 # ----------------- AGENT 3: Process Parameter & Future Order Engine -----------------
 def run_agent_3_param_analysis(data: List[Dict[str, Any]], target_formula: Optional[str] = None) -> Dict[str, Any]:
     # Group historical stats by formula
