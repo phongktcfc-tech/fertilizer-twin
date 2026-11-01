@@ -574,6 +574,23 @@ def api_agent4_chat(payload: Dict[str, Any] = Body(...)):
 # Mount static files
 app.mount("/", StaticFiles(directory=PUBLIC_DIR, html=True), name="public")
 
+# --- AUTOMATIC 24/7 KEEP-AWAKE THREAD (PREVENTS RENDER FREE TIER SLEEP) ---
+import threading
+
+def _render_keep_awake():
+    time.sleep(60)
+    while True:
+        try:
+            # Self-ping every 8 minutes so Render inactivity timer never reaches 15 minutes
+            requests.get("https://fertilizer-digital-twin.onrender.com/api/sync", timeout=15)
+            sync_google_sheet(force=True)
+        except Exception:
+            pass
+        time.sleep(8 * 60)
+
+threading.Thread(target=_render_keep_awake, daemon=True).start()
+
+
 if __name__ == "__main__":
     import uvicorn
     import os
