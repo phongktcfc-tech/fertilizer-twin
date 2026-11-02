@@ -1183,125 +1183,128 @@
 
     <!-- ==================== TAB 3: CHUYÊN GIA - TỐI ƯU CÔNG THỨC & SETPOINT VẬN HÀNH ==================== -->
     <div id="tab-agent3" class="tab-content hidden h-full flex flex-col min-h-0 flex-1 overflow-hidden">
-      <div class="flex gap-4 h-full flex-1 min-h-0 items-stretch">
+      <div class="flex gap-3.5 h-full flex-1 min-h-0 items-stretch">
         
-        <!-- CỘT TRÁI (FORM THIẾT LẬP 360PX VỪA KHÍT 1 MÀN HÌNH KHÔNG CUỘN) -->
-        <div class="w-[360px] flex-shrink-0 bg-[#091120] border border-gray-800 rounded-[10px] p-3 flex flex-col justify-between shadow-lg h-full min-h-0">
-          <div class="space-y-2">
-            <!-- Header Chuyên Gia -->
-            <div class="flex items-center gap-2 pb-1.5 border-b border-gray-800">
-              <div class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
-                <i data-lucide="award" class="w-5 h-5"></i>
+        <!-- CỘT TRÁI (BẢNG ĐIỀU KHIỂN CHUYÊN GIA 430PX NỔI BẬT, RỘNG RÃI, DỄ THAO TÁC) -->
+        <div class="w-[430px] flex-shrink-0 rounded-[12px] p-[18px_20px] flex flex-col justify-between shadow-2xl h-full min-h-0" style="background: linear-gradient(180deg, #111a2e 0%, #0d1424 100%); border: 1px solid rgba(20, 184, 166, 0.35); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);">
+          <div class="space-y-3">
+            <!-- Header Chuyên Gia Nổi Bật -->
+            <div class="flex items-center gap-3 pb-2.5 border-b border-gray-800/80">
+              <div class="w-[40px] h-[40px] rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-300 shadow-inner flex-shrink-0">
+                <i data-lucide="award" class="w-6 h-6"></i>
               </div>
-              <div>
-                <h3 class="font-bold text-white text-[15px] leading-tight">CHUYÊN GIA</h3>
-                <p class="text-xs text-gray-400">Tính toán công nghệ &amp; setpoint vận hành cho đơn hàng mới</p>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-extrabold text-white text-[17px] leading-tight tracking-wide">CHUYÊN GIA</h3>
+                  <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-teal-500/15 text-teal-300 border border-teal-500/30">AI ADVISOR</span>
+                </div>
+                <p class="text-[12.5px] text-[#94a3b8] truncate mt-0.5">Tính toán công nghệ &amp; setpoint vận hành cho đơn hàng mới</p>
               </div>
             </div>
 
-            <!-- Công Thức Đơn Hàng Cần Chạy -->
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-xs text-gray-300 font-bold flex items-center gap-1.5">
-                  <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <!-- Mục 1: Công Thức Đơn Hàng Cần Chạy -->
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="text-[13px] text-gray-200 font-bold flex items-center gap-1.5">
+                  <i data-lucide="flask-conical" class="w-4 h-4 text-teal-400"></i>
                   Công Thức Đơn Hàng Cần Chạy:
                 </label>
-                <span class="text-xs text-cyan-400 font-mono">Tự gõ hoặc chọn mẫu</span>
+                <span class="text-[12px] text-teal-400 font-mono font-semibold px-2 py-0.5 rounded bg-teal-950/60 border border-teal-500/25 whitespace-nowrap">Tự gõ hoặc chọn mẫu</span>
               </div>
               
-              <!-- Custom Formula Text Input -->
+              <!-- Custom Formula Text Input (Cao 44px, chữ 18px font-bold #2dd4bf) -->
               <div class="relative">
-                <input type="text" id="agent3CustomFormulaInput" value="25.9.9" placeholder="Ví dụ: NPK 16-16-8+TE, 20-20-15, 15-5-20..." class="w-full bg-gray-950 text-white font-mono font-bold text-xs border border-cyan-500/40 focus:border-cyan-400 rounded-lg p-2 pl-2.5 outline-none transition shadow-inner" oninput="onCustomFormulaInput(this.value)" />
-                <span class="absolute right-2.5 top-2 text-xs text-gray-500 font-mono font-bold">NPK</span>
+                <input type="text" id="agent3CustomFormulaInput" value="25.9.9" placeholder="Ví dụ: NPK 16-16-8+TE, 20-20-15, 15-5-20..." class="w-full h-[44px] bg-[#070b14] text-[#2dd4bf] font-mono font-bold text-[18px] border-[1.5px] border-[#1e293b] focus:border-[#14b8a6] focus:ring-1 focus:ring-[#14b8a6] rounded-lg px-3 outline-none transition shadow-inner" oninput="onCustomFormulaInput(this.value)" />
+                <span class="absolute right-3 top-2.5 text-[14px] text-gray-500 font-mono font-bold">NPK</span>
               </div>
 
-              <!-- Quick Formula Preset Chips -->
-              <div class="mt-1">
-                <span class="text-[11px] text-gray-400 font-mono block mb-1">MẪU CÔNG THỨC GỢI Ý (BẤM ĐỂ CHỌN):</span>
-                <div class="flex flex-wrap gap-1 font-mono text-[11px]">
-                  <button type="button" onclick="setAgent3Formula('25.9.9', 40)" class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 hover:border-cyan-500 text-gray-300 hover:text-cyan-300 transition">25.9.9 (Đạm cao)</button>
-                  <button type="button" onclick="setAgent3Formula('16-16-8+TE', 50)" class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 hover:border-cyan-500 text-gray-300 hover:text-cyan-300 transition">16-16-8+TE</button>
-                  <button type="button" onclick="setAgent3Formula('13.7.26', 40)" class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 hover:border-cyan-500 text-gray-300 hover:text-cyan-300 transition">13.7.26 (Kali cao)</button>
-                  <button type="button" onclick="setAgent3Formula('20.20.15', 40)" class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 hover:border-cyan-500 text-gray-300 hover:text-cyan-300 transition">20.20.15</button>
-                  <button type="button" onclick="setAgent3Formula('30.9.9', 35)" class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 hover:border-cyan-500 text-gray-300 hover:text-cyan-300 transition">30.9.9</button>
-                  <button type="button" onclick="setAgent3Formula('15-5-20', 40)" class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 hover:border-cyan-500 text-gray-300 hover:text-cyan-300 transition">15-5-20</button>
-                  <button type="button" onclick="setAgent3Formula('12-12-17+2MgO', 45)" class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 hover:border-cyan-500 text-gray-300 hover:text-cyan-300 transition">12-12-17+2MgO</button>
+              <!-- Lưới Mẫu Công Thức Gợi Ý (3 Cột Đều Đặn, Cao 34px, Chữ 12.5px SemiBold) -->
+              <div class="mt-1.5">
+                <span class="text-[11.5px] text-gray-400 font-mono block mb-1.5 font-medium">MẪU CÔNG THỨC GỢI Ý (BẤM ĐỂ CHỌN):</span>
+                <div class="grid grid-cols-3 gap-2 font-mono text-[12.5px]" id="formulaChipsGrid">
+                  <button type="button" onclick="setAgent3Formula('25.9.9', 40)" data-formula="25.9.9" class="formula-chip h-[34px] px-2 rounded-lg font-semibold transition flex items-center justify-center text-center bg-teal-500/20 border-[1.5px] border-[#14b8a6] text-[#5eead4]">25.9.9 (Đạm cao)</button>
+                  <button type="button" onclick="setAgent3Formula('16-16-8+TE', 50)" data-formula="16-16-8+TE" class="formula-chip h-[34px] px-2 rounded-lg font-semibold transition flex items-center justify-center text-center bg-[#091120] border border-gray-700/80 hover:border-teal-500 text-gray-300 hover:text-teal-300">16-16-8+TE</button>
+                  <button type="button" onclick="setAgent3Formula('13.7.26', 40)" data-formula="13.7.26" class="formula-chip h-[34px] px-2 rounded-lg font-semibold transition flex items-center justify-center text-center bg-[#091120] border border-gray-700/80 hover:border-teal-500 text-gray-300 hover:text-teal-300">13.7.26 (Kali cao)</button>
+                  <button type="button" onclick="setAgent3Formula('20.20.15', 40)" data-formula="20.20.15" class="formula-chip h-[34px] px-2 rounded-lg font-semibold transition flex items-center justify-center text-center bg-[#091120] border border-gray-700/80 hover:border-teal-500 text-gray-300 hover:text-teal-300">20.20.15</button>
+                  <button type="button" onclick="setAgent3Formula('30.9.9', 35)" data-formula="30.9.9" class="formula-chip h-[34px] px-2 rounded-lg font-semibold transition flex items-center justify-center text-center bg-[#091120] border border-gray-700/80 hover:border-teal-500 text-gray-300 hover:text-teal-300">30.9.9</button>
+                  <button type="button" onclick="setAgent3Formula('15-5-20', 40)" data-formula="15-5-20" class="formula-chip h-[34px] px-2 rounded-lg font-semibold transition flex items-center justify-center text-center bg-[#091120] border border-gray-700/80 hover:border-teal-500 text-gray-300 hover:text-teal-300">15-5-20</button>
                 </div>
               </div>
             </div>
 
-            <!-- Target Production Quantity & 24h Capacity Selection (1 Ngày 2 Ca, Mỗi Ca 12h) -->
-            <div class="space-y-1.5">
-              <div class="grid grid-cols-2 gap-2 text-xs">
+            <!-- Mục 2: Sản Lượng 1 Ca (12h) & Công Suất 24h (2 Ca) -->
+            <div class="space-y-2">
+              <div class="grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label class="text-gray-300 block mb-0.5 font-semibold flex items-center justify-between">
-                    <span>Sản Lượng 1 Ca (12h):</span>
-                    <span class="text-cyan-400 font-mono text-[11px]">1 ngày 2 ca</span>
+                  <label class="text-gray-200 block mb-1 font-semibold text-[13px] truncate">
+                    Sản Lượng 1 Ca (12h)
                   </label>
                   <div class="relative">
-                    <input type="number" id="inputTargetTons" value="40" step="1" min="10" max="100" class="w-full bg-gray-950 text-white font-mono font-bold text-xs border border-gray-700 focus:border-cyan-400 rounded-lg p-1.5 pl-2 outline-none" oninput="onCustomTonsInput(this.value)" />
-                    <span class="absolute right-2 top-1.5 text-xs text-gray-400 font-mono">tấn/ca</span>
+                    <input type="number" id="inputTargetTons" value="40" step="1" min="10" max="100" class="w-full h-[42px] bg-[#070b14] text-white font-mono font-bold text-[16px] border border-gray-700 focus:border-teal-400 rounded-lg px-3 outline-none shadow-inner" oninput="onCustomTonsInput(this.value)" />
+                    <span class="absolute right-2.5 top-2.5 text-xs text-gray-400 font-mono font-medium">tấn/ca</span>
                   </div>
                 </div>
 
                 <div>
-                  <label class="text-gray-300 block mb-0.5 font-semibold flex items-center justify-between">
-                    <span>Công Suất 24h (2 Ca):</span>
-                    <span id="badgeTargetRate" class="text-emerald-400 font-mono font-bold text-[11px]">~3.33 t/h</span>
-                  </label>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="text-gray-200 font-semibold text-[13px] truncate">
+                      Công Suất 24h (2 Ca)
+                    </label>
+                    <span id="badgeTargetRate" class="text-emerald-400 font-mono font-bold text-[11.5px] px-1.5 py-0.2 rounded bg-emerald-950/80 border border-emerald-500/30 whitespace-nowrap">~3.33 t/h</span>
+                  </div>
                   <div class="relative">
-                    <input type="number" id="inputCapacity24h" value="80" step="2" min="20" max="200" class="w-full bg-gray-950 text-emerald-400 font-mono font-bold text-xs border border-emerald-500/40 focus:border-emerald-400 rounded-lg p-1.5 pl-2 outline-none" oninput="on24hCapacityInput(this.value)" />
-                    <span class="absolute right-2 top-1.5 text-xs text-gray-400 font-mono">tấn/24h</span>
+                    <input type="number" id="inputCapacity24h" value="80" step="2" min="20" max="200" class="w-full h-[42px] bg-[#070b14] text-emerald-400 font-mono font-bold text-[16px] border border-emerald-500/40 focus:border-emerald-400 rounded-lg px-3 outline-none shadow-inner" oninput="on24hCapacityInput(this.value)" />
+                    <span class="absolute right-2.5 top-2.5 text-xs text-gray-400 font-mono font-medium">tấn/24h</span>
                   </div>
                 </div>
               </div>
 
-              <!-- Nút chọn nhanh công suất dự kiến 24h -->
+              <!-- Cụm 5 Nút Tự Chọn Mốc 24H: 5 Cột, Cao 42px, Chữ Chính 13.5px Bold, Phụ 11px -->
               <div>
-                <span class="text-[11px] text-gray-400 font-mono block mb-1">TỰ CHỌN MỐC 24H:</span>
-                <div class="grid grid-cols-5 gap-1 font-mono text-[11px]">
-                  <button type="button" onclick="select24hCapacity(80)" class="px-1 py-0.5 rounded bg-gray-950 border border-gray-800 hover:border-emerald-500 text-gray-300 hover:text-emerald-300 transition text-center">80t <span class="text-[9px] block text-gray-500">(40t/ca)</span></button>
-                  <button type="button" onclick="select24hCapacity(100)" class="px-1 py-0.5 rounded bg-gray-950 border border-gray-800 hover:border-emerald-500 text-gray-300 hover:text-emerald-300 transition text-center">100t <span class="text-[9px] block text-gray-500">(50t/ca)</span></button>
-                  <button type="button" onclick="select24hCapacity(120)" class="px-1 py-0.5 rounded bg-gray-950 border border-gray-800 hover:border-emerald-500 text-gray-300 hover:text-emerald-300 transition text-center">120t <span class="text-[9px] block text-gray-500">(60t/ca)</span></button>
-                  <button type="button" onclick="select24hCapacity(140)" class="px-1 py-0.5 rounded bg-gray-950 border border-gray-800 hover:border-emerald-500 text-gray-300 hover:text-emerald-300 transition text-center">140t <span class="text-[9px] block text-gray-500">(70t/ca)</span></button>
-                  <button type="button" onclick="select24hCapacity(160)" class="px-1 py-0.5 rounded bg-gray-950 border border-gray-800 hover:border-emerald-500 text-gray-300 hover:text-emerald-300 transition text-center">160t <span class="text-[9px] block text-gray-500">(80t/ca)</span></button>
+                <span class="text-[11.5px] text-gray-400 font-mono block mb-1.5 font-medium">TỰ CHỌN MỐC 24H:</span>
+                <div class="grid grid-cols-5 gap-1.5 font-mono" id="capacityChipsGrid">
+                  <button type="button" onclick="select24hCapacity(80)" data-capacity="80" class="capacity-chip h-[42px] rounded-lg transition text-center flex flex-col items-center justify-center bg-emerald-500/20 border-[1.5px] border-[#10b981] text-[#34d399] shadow-sm"><span class="text-[13.5px] font-bold leading-tight">80t</span><span class="text-[11px] opacity-80">(40t/ca)</span></button>
+                  <button type="button" onclick="select24hCapacity(100)" data-capacity="100" class="capacity-chip h-[42px] rounded-lg transition text-center flex flex-col items-center justify-center bg-[#091120] border border-gray-700/80 hover:border-emerald-500 text-gray-300 hover:text-emerald-300"><span class="text-[13.5px] font-bold leading-tight">100t</span><span class="text-[11px] text-gray-400">(50t/ca)</span></button>
+                  <button type="button" onclick="select24hCapacity(120)" data-capacity="120" class="capacity-chip h-[42px] rounded-lg transition text-center flex flex-col items-center justify-center bg-[#091120] border border-gray-700/80 hover:border-emerald-500 text-gray-300 hover:text-emerald-300"><span class="text-[13.5px] font-bold leading-tight">120t</span><span class="text-[11px] text-gray-400">(60t/ca)</span></button>
+                  <button type="button" onclick="select24hCapacity(140)" data-capacity="140" class="capacity-chip h-[42px] rounded-lg transition text-center flex flex-col items-center justify-center bg-[#091120] border border-gray-700/80 hover:border-emerald-500 text-gray-300 hover:text-emerald-300"><span class="text-[13.5px] font-bold leading-tight">140t</span><span class="text-[11px] text-gray-400">(70t/ca)</span></button>
+                  <button type="button" onclick="select24hCapacity(160)" data-capacity="160" class="capacity-chip h-[42px] rounded-lg transition text-center flex flex-col items-center justify-center bg-[#091120] border border-gray-700/80 hover:border-emerald-500 text-gray-300 hover:text-emerald-300"><span class="text-[13.5px] font-bold leading-tight">160t</span><span class="text-[11px] text-gray-400">(80t/ca)</span></button>
                 </div>
               </div>
             </div>
 
-            <!-- CÔNG NGHỆ (CỐ ĐỊNH) & THỜI TIẾT 12 THÁNG CẦN THƠ -->
-            <div class="space-y-1.5">
+            <!-- Mục 3: Công Nghệ (Cố Định 40px) & Thời Tiết (40px) -->
+            <div class="space-y-2">
               <div>
-                <label class="text-gray-300 block mb-0.5 font-semibold text-xs flex items-center justify-between">
+                <label class="text-gray-200 block mb-1 font-semibold text-[13px] flex items-center justify-between">
                   <span>Công Nghệ Dây Chuyền:</span>
-                  <span class="text-[11px] text-emerald-400 bg-emerald-950/80 px-1.5 py-0.2 rounded font-mono font-bold border border-emerald-500/30">Cố Định Chuẩn</span>
+                  <span class="text-[11.5px] text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded font-mono font-bold border border-emerald-500/30">Cố Định Chuẩn</span>
                 </label>
-                <div class="w-full bg-gray-900/90 text-cyan-300 font-bold border border-gray-700 rounded-lg px-2 py-1.5 text-xs flex items-center justify-between shadow-inner">
-                  <span class="flex items-center gap-1.5">
+                <div class="w-full h-[40px] bg-[#070b14] text-cyan-300 font-bold border border-gray-700/80 rounded-lg px-3 text-[13px] flex items-center justify-between shadow-inner">
+                  <span class="flex items-center gap-2">
                     <i data-lucide="cylinder" class="w-4 h-4 text-cyan-400"></i>
                     Thùng quay hơi nước
                   </span>
-                  <span class="text-gray-400 text-[11px] font-mono">Drying Drum</span>
+                  <span class="text-gray-400 text-[12px] font-mono">Drying Drum System</span>
                 </div>
                 <input type="hidden" id="agent3MethodSelect" value="steam_drum" />
               </div>
 
               <div>
-                <div class="flex items-center justify-between mb-0.5">
-                  <label class="text-gray-300 font-semibold text-xs flex items-center gap-1.5">
-                    <i data-lucide="cloud-rain" class="w-3.5 h-3.5 text-cyan-400"></i>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-gray-200 font-semibold text-[13px] flex items-center gap-1.5">
+                    <i data-lucide="cloud-rain" class="w-4 h-4 text-cyan-400"></i>
                     Thời Tiết (Cần Thơ - 12 Tháng):
                   </label>
-                  <span id="canThoHumBadge" class="text-xs text-cyan-400 font-mono font-bold">Ẩm TB: ~82%</span>
+                  <span id="canThoHumBadge" class="text-[12px] text-cyan-400 font-mono font-bold">Ẩm TB: ~82%</span>
                 </div>
-                <select id="agent3MonthSelect" onchange="onCanThoMonthChange(this.value)" class="w-full bg-gray-950 text-cyan-300 font-mono font-bold border border-gray-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-cyan-400 shadow-inner">
+                <select id="agent3MonthSelect" onchange="onCanThoMonthChange(this.value)" class="w-full h-[40px] bg-[#070b14] text-cyan-300 font-mono font-bold border border-gray-700/80 rounded-lg px-3 text-[13px] focus:outline-none focus:border-cyan-400 shadow-inner">
                   <option value="1">Tháng 1 — Mùa khô (Độ ẩm TB: ~78%)</option>
                   <option value="2">Tháng 2 — Mùa khô (Độ ẩm TB: ~75% - thấp nhất)</option>
                   <option value="3">Tháng 3 — Mùa khô (Độ ẩm TB: ~74% - nắng nóng)</option>
                   <option value="4">Tháng 4 — Nắng gắt (Độ ẩm TB: ~76%)</option>
                   <option value="5">Tháng 5 — Đầu mùa mưa (Độ ẩm TB: ~82%)</option>
-                  <option value="6">Tháng 6 — Mưa dầm (Độ ẩm TB: ~85%)</option>
-                  <option value="7">Tháng 7 — Mưa nhiều (Độ ẩm TB: ~86%)</option>
+                  <option value="6">Tháng 6 — Mùa mưa dầm (Độ ẩm TB: ~85%)</option>
+                  <option value="7">Tháng 7 — Mùa mưa nhiều (Độ ẩm TB: ~86%)</option>
                   <option value="8">Tháng 8 — Mưa ngâu (Độ ẩm TB: ~87% - ẩm rất cao)</option>
                   <option value="9">Tháng 9 — Triều cường (Độ ẩm TB: ~88% - cao nhất)</option>
                   <option value="10">Tháng 10 — Mưa triều (Độ ẩm TB: ~86%)</option>
@@ -1312,24 +1315,24 @@
               </div>
             </div>
 
-            <!-- Nút Tính Toán Chuyên Gia -->
-            <button onclick="calculateFutureOrder()" id="btnAgent3Calculate" class="w-full py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 active:scale-[0.985] text-white font-bold text-xs rounded-lg shadow-md transition-all flex items-center justify-center gap-2 group">
-              <i data-lucide="zap" class="w-4 h-4 text-amber-300 animate-pulse group-hover:scale-110 transition-transform"></i>
+            <!-- Mục 4: Nút Hành Động Chính 46px, Gradient Emerald/Teal Rực Rỡ -->
+            <button onclick="calculateFutureOrder()" id="btnAgent3Calculate" class="w-full h-[46px] text-[14px] font-extrabold uppercase tracking-[0.5px] text-white rounded-lg transition-all duration-200 flex items-center justify-center gap-2 group active:scale-[0.985] shadow-lg hover:brightness-110" style="background: linear-gradient(135deg, #10b981 0%, #0d9488 100%); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);">
+              <i data-lucide="zap" class="w-5 h-5 text-amber-300 animate-pulse group-hover:scale-110 transition-transform"></i>
               <span>CHUYÊN GIA TÍNH TOÁN CHI TIẾT</span>
             </button>
           </div>
 
-          <!-- YÊU CẦU 2.1: KHỐI CĂN CỨ TÍNH TOÁN KỸ THUẬT THU GỌN THÀNH ACCORDION / TOOLTIP ĐỂ GIẢI PHÓNG DIỆN TÍCH DỌC -->
+          <!-- Mục 5: Căn Cứ Kỹ Thuật (Accordion Thu Gọn) -->
           <div class="mt-auto pt-2 border-t border-gray-800 text-xs font-mono">
-            <details class="group rounded-lg bg-gray-950/80 border border-gray-800/80 p-2 transition">
-              <summary class="flex items-center justify-between text-cyan-400 font-bold cursor-pointer hover:text-cyan-300 select-none">
-                <span class="flex items-center gap-1.5">
-                  <i data-lucide="info" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <details class="group rounded-lg bg-[#070b14]/90 border border-gray-800/80 p-2.5 transition">
+              <summary class="flex items-center justify-between text-teal-400 font-bold cursor-pointer hover:text-teal-300 select-none">
+                <span class="flex items-center gap-1.5 text-[12px]">
+                  <i data-lucide="info" class="w-3.5 h-3.5 text-teal-400"></i>
                   <span>CĂN CỨ TÍNH TOÁN KỸ THUẬT</span>
                 </span>
                 <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-500 transition-transform group-open:rotate-180"></i>
               </summary>
-              <div class="mt-2 pt-2 border-t border-gray-800/60 space-y-1 text-gray-400 text-[11px] leading-relaxed">
+              <div class="mt-2 pt-2 border-t border-gray-800/60 space-y-1 text-gray-400 text-[11.5px] leading-relaxed">
                 <p>• <b>Lịch sử nhà máy:</b> Than TB 1.150 kg/ca, Vỏ điều 400 kg/ca, Ẩm sấy 1.35%</p>
                 <p>• <b>Khí tượng Cần Thơ:</b> Bù trừ nhiệt sấy theo dữ liệu 12 tháng</p>
                 <p>• <b>TCVN 5815:2018:</b> Cỡ hạt 2-4mm &gt; 90%, ẩm lưu kho &lt; 1.5%</p>
@@ -1338,8 +1341,8 @@
           </div>
         </div>
 
-        <!-- CỘT PHẢI (BẢN BÁO CÁO CHẨN ĐOÁN & SETPOINT: TRỰC QUAN HÓA, CHỐNG RỐI MẮT, KHÔNG CẮT ĐÁY) -->
-        <div class="flex-1 min-w-0 bg-[#091120] border border-gray-800 rounded-[10px] p-3.5 flex flex-col shadow-lg h-full min-h-0 overflow-y-auto custom-scrollbar">
+        <!-- CỘT PHẢI (BẢN BÁO CÁO CHẨN ĐOÁN & SETPOINT: FLEX-1, TỰ ĐỘNG CO GIÃN HÀI HÒA, VỪA KHÍT 100VH) -->
+        <div class="flex-1 min-w-0 bg-[#091120] border border-gray-800 rounded-[12px] p-3.5 flex flex-col shadow-lg h-full min-h-0 overflow-y-auto custom-scrollbar">
           
           <!-- TOP STATUS & SUMMARY STRIP -->
           <div class="pb-2.5 mb-2.5 border-b border-gray-800 flex-shrink-0">
@@ -1360,7 +1363,7 @@
             </div>
           </div>
 
-          <!-- YÊU CẦU 2.2: TỐI ƯU 4 THẺ NHIÊN LIỆU (ẨN DÒNG DÀI DÒNG, CHUYỂN VÀO TOOLTIP, SỐ LỚN 24PX, BADGE ĐỊNH MỨC) -->
+          <!-- PHẦN 1: 4 THẺ NHIÊN LIỆU ĐỐT LÒ (DỰ TOÁN CHO CA 12H - 1 NGÀY 2 CA) -->
           <div class="mb-3 flex-shrink-0">
             <span class="text-[13px] font-mono text-cyan-400 font-bold block mb-2 flex items-center gap-1.5">
               <i data-lucide="flame" class="w-4 h-4 text-amber-400"></i>
@@ -1436,7 +1439,7 @@
             </div>
           </div>
 
-          <!-- YÊU CẦU 2.3: TỐI ƯU 6 THẺ TRẠM THIẾT BỊ (NHÃN TRÁI - BADGE PHẢI, ĐƯỜNG PHÂN CÁCH MỜ, KHUYẾN NGHỊ 1 DÒNG PILL GỌN GÀNG) -->
+          <!-- PHẦN 2: BẢNG THÔNG SỐ VẬN HÀNH CHUẨN CÀI ĐẶT CHO 7 TRẠM THIẾT BỊ -->
           <div class="mb-3 flex-shrink-0">
             <span class="text-[13px] font-mono text-cyan-400 font-bold block mb-2 flex items-center gap-1.5">
               <i data-lucide="settings" class="w-4 h-4 text-cyan-400"></i>
@@ -1612,7 +1615,7 @@
             </div>
           </div>
 
-          <!-- YÊU CẦU 2.4: CẤU TRÚC LẠI MỤC CHỈ DẪN VẬN HÀNH QUAN TRỌNG (TIÊU ĐỀ NGUY CƠ + 3 THẺ BƯỚC HÀNH ĐỘNG NẰM NGANG) -->
+          <!-- PHẦN 3: CHỈ DẪN VẬN HÀNH QUAN TRỌNG (TIÊU ĐỀ NGUY CƠ + 3 THẺ BƯỚC HÀNH ĐỘNG NẰM NGANG) -->
           <div class="p-3 rounded-lg bg-amber-950/20 border border-amber-500/30 text-xs flex-shrink-0 shadow-sm" id="recTechGuideContainer">
             <!-- Dòng tiêu đề cảnh báo nguy cơ chính (in đậm màu cam/đỏ) -->
             <div class="flex items-center gap-2 mb-2 bg-red-950/40 px-3 py-1.5 rounded-lg border border-red-500/30 text-red-300 font-mono text-[13px] font-bold">
@@ -1656,7 +1659,7 @@
               </div>
             </div>
 
-            <!-- Hidden compatibility holder so any legacy code referencing recTechGuide won't break -->
+            <!-- Hidden compatibility holder -->
             <div id="recTechGuide" class="hidden"></div>
           </div>
 
@@ -4263,35 +4266,48 @@
       calculateFutureOrder();
     }
 
-    function setAgent3Formula(formula, tons) {
-
-      const input = document.getElementById('agent3CustomFormulaInput');
-
-      if (input) input.value = formula;
-
-      const inputTons = document.getElementById('inputTargetTons');
-
-      if (inputTons && tons) {
-
-        inputTons.value = tons;
-
-        onShiftTonsChange(tons);
-
-      }
-
-      calculateFutureOrder();
-
+    function updateFormulaChipsState(currentFormula) {
+      document.querySelectorAll('.formula-chip').forEach(btn => {
+        const f = btn.getAttribute('data-formula');
+        if (f && currentFormula && (f.toLowerCase() === currentFormula.toLowerCase() || currentFormula.toLowerCase().includes(f.toLowerCase()))) {
+          btn.className = "formula-chip h-[34px] px-2 rounded-lg font-semibold transition flex items-center justify-center text-center bg-teal-500/20 border-[1.5px] border-[#14b8a6] text-[#5eead4]";
+        } else {
+          btn.className = "formula-chip h-[34px] px-2 rounded-lg font-semibold transition flex items-center justify-center text-center bg-[#091120] border border-gray-700/80 hover:border-teal-500 text-gray-300 hover:text-teal-300";
+        }
+      });
     }
 
+    function updateCapacityChipsState(tons24) {
+      const roundedTons24 = Math.round(parseFloat(tons24) || 0);
+      document.querySelectorAll('.capacity-chip').forEach(btn => {
+        const c = parseInt(btn.getAttribute('data-capacity'));
+        if (c === roundedTons24) {
+          btn.className = "capacity-chip h-[42px] rounded-lg transition text-center flex flex-col items-center justify-center bg-emerald-500/20 border-[1.5px] border-[#10b981] text-[#34d399] shadow-sm";
+          const sub = btn.querySelector('span:last-child');
+          if (sub) sub.className = "text-[11px] opacity-80";
+        } else {
+          btn.className = "capacity-chip h-[42px] rounded-lg transition text-center flex flex-col items-center justify-center bg-[#091120] border border-gray-700/80 hover:border-emerald-500 text-gray-300 hover:text-emerald-300";
+          const sub = btn.querySelector('span:last-child');
+          if (sub) sub.className = "text-[11px] text-gray-400";
+        }
+      });
+    }
 
+    function setAgent3Formula(formula, tons) {
+      const input = document.getElementById('agent3CustomFormulaInput');
+      if (input) input.value = formula;
+      const inputTons = document.getElementById('inputTargetTons');
+      if (inputTons && tons) {
+        inputTons.value = tons;
+        onShiftTonsChange(tons);
+      }
+      updateFormulaChipsState(formula);
+      calculateFutureOrder();
+    }
 
     function onCustomFormulaInput(val) {
-
-      // Keep in sync
-
+      updateFormulaChipsState(val.trim());
     }
-
-
 
     function onShiftTonsChange(shiftVal) {
       const shiftTons = parseFloat(shiftVal) || 0;
@@ -4304,6 +4320,7 @@
       }
       const badge = document.getElementById('badgeTargetRate');
       if (badge) badge.innerText = `~${ratePerHour} t/h`;
+      updateCapacityChipsState(tons24);
     }
 
     function on24hCapacityChange(val24h) {
@@ -4317,20 +4334,20 @@
       }
       const badge = document.getElementById('badgeTargetRate');
       if (badge) badge.innerText = `~${ratePerHour} t/h`;
+      updateCapacityChipsState(tons24);
     }
 
     function select24hCapacity(tons24) {
       const input24h = document.getElementById('inputCapacity24h');
       if (input24h) input24h.value = tons24;
       on24hCapacityChange(tons24);
+      updateCapacityChipsState(tons24);
       calculateFutureOrder();
     }
 
     function updateThroughputBadge(tonsVal) {
       onShiftTonsChange(tonsVal);
     }
-
-
 
     async function loadAgent3Data() {
 
