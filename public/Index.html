@@ -1,0 +1,4791 @@
+<!DOCTYPE html>
+
+<html lang="vi" class="dark">
+
+<head>
+
+  <script>
+
+    window.addEventListener('error', function(e) {
+
+      console.error('JS_ERROR:', e.message, e.filename, e.lineno);
+
+    });
+
+    // Tu dong tro API ve Render Cloud khi chay tren Hosting rieng
+    (function() {
+      const isLocalOrRender = window.location.hostname === 'localhost' || 
+                              window.location.hostname === '127.0.0.1' || 
+                              window.location.hostname.includes('onrender.com');
+      const API_SERVER = isLocalOrRender ? '' : 'https://fertilizer-digital-twin.onrender.com';
+      if (API_SERVER) {
+        const _origFetch = window.fetch;
+        window.fetch = function(input, init) {
+          if (typeof input === 'string' && input.startsWith('/api/')) {
+            input = API_SERVER + input;
+          }
+          return _origFetch(input, init);
+        };
+      }
+    })();
+
+  </script>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Digital Twin Dây Chuyền Sản Xuất Phân Bón NPK - 3D SCADA</title>
+
+  <!-- Tailwind CSS CDN -->
+
+    <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Three.js & OrbitControls -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <!-- Chart.js -->
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Lucide Icons -->
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Marked for markdown parsing -->
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+
+
+  <script>
+
+    tailwind.config = {
+
+      darkMode: 'class',
+
+      theme: {
+
+        extend: {
+
+          colors: {
+
+            brand: {
+
+              400: '#38bdf8',
+
+              500: '#0284c7',
+
+              600: '#0369a1',
+
+            },
+
+            tech: {
+
+              bg: '#070d18',
+
+              card: '#0c1527',
+
+              border: '#1a273f',
+
+              accent: '#00e5ff',
+
+              cyan: '#00bcd4',
+
+              green: '#10b981',
+
+              orange: '#ea580c',
+
+              purple: '#a855f7',
+
+              red: '#dc2626'
+
+            }
+
+          }
+
+        }
+
+      }
+
+    }
+
+  </script>
+
+    <style>
+    /* =========================================================================
+       CSS DESIGN TOKENS (TYPOGRAPHY SCALE & SPACING)
+       ========================================================================= */
+    :root {
+      --font-family-base: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-title-lg: 15px;      /* Tiêu đề khối lớn: 15px, font-weight: 700 */
+      --font-title-sm: 13px;      /* Tiêu đề trạm máy & thẻ thành phần: 13px, font-weight: 600 */
+      --font-metric-hero: 36px;   /* Chỉ số tổng hợp nổi bật: 36px, font-weight: 800 */
+      --font-metric-kpi: 20px;    /* Trị số vận hành chính KPI: 20px, font-weight: 700 */
+      --font-body: 13px;          /* Nhãn thông số, ô nhập liệu & ô bảng dữ liệu: 13px */
+      --font-caption: 12px;       /* Thẻ trạng thái & hướng dẫn phụ: 12px */
+
+      --spacing-grid: 16px;       /* Khoảng cách lưới chính: 16px */
+      --spacing-card-gap: 12px;   /* Khoảng cách giữa các thẻ trạm con: 12px */
+      --padding-card: 12px 16px;  /* Khoảng đệm bên trong thẻ chuẩn: 12px 16px */
+      --radius-outer: 10px;       /* Bo góc khung ngoài: 10px */
+      --radius-inner: 8px;        /* Bo góc thẻ con: 8px */
+      --border-card: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #060a12;
+      color: #e2e8f0;
+      font-family: var(--font-family-base);
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* 1. KHÓA KHUNG NHÌN TOÀN CỤC TRÊN MÁY TÍNH (1 MÀN HÌNH - KHÔNG CUỘN TRÌNH DUYỆT) */
+    @media (min-width: 1024px) {
+      body {
+        height: 100vh !important;
+        width: 100vw !important;
+        max-height: 100vh !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+
+      header#appHeader {
+        height: 52px !important;
+        min-height: 52px !important;
+        max-height: 52px !important;
+        flex-shrink: 0 !important;
+      }
+
+      nav#appNav {
+        height: 44px !important;
+        min-height: 44px !important;
+        max-height: 44px !important;
+        flex-shrink: 0 !important;
+      }
+
+      main#appMain {
+        flex: 1 1 0% !important;
+        min-height: 0 !important;
+        height: calc(100vh - 96px) !important;
+        padding: 12px 16px 16px 16px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+
+      .tab-content {
+        flex: 1 1 0% !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+
+      .tab-content.hidden {
+        display: none !important;
+      }
+    }
+
+    /* 1.4. THANH CUỘN MẢNH NỘI BỘ TÔNG TỐI (WIDTH: 6PX) */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(10, 18, 32, 0.6);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.35);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(6, 182, 212, 0.5);
+    }
+    .custom-scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(100, 116, 139, 0.35) rgba(10, 18, 32, 0.6);
+    }
+
+    /* 2.6. LOẠI BỎ TOÀN BỘ CỠ CHỮ DƯỚI 12PX */
+    .text-\[9px\], .text-\[10px\], .text-\[11px\], .text-2xs {
+      font-size: 12px !important;
+      line-height: 1.4 !important;
+    }
+
+    #three-canvas-container {
+      width: 100%;
+      height: 100%;
+      flex: 1 1 0%;
+      min-height: 240px;
+      position: relative;
+      background: radial-gradient(circle at 50% 30%, #152748 0%, #081122 100%);
+      overflow: hidden;
+    }
+
+    .step-card-3d {
+      background: rgba(12, 21, 39, 0.7);
+      border: 1px solid rgba(26, 39, 63, 0.8);
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+    .step-card-3d:hover {
+      border-color: rgba(0, 229, 255, 0.4);
+      background: rgba(15, 27, 50, 0.85);
+      transform: translateY(-1px);
+    }
+    .step-card-3d.active {
+      border-color: #00e5ff;
+      background: rgba(0, 229, 255, 0.08);
+      box-shadow: 0 0 15px rgba(0, 229, 255, 0.15);
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.8; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.95); }
+    }
+    .badge-pulse {
+      animation: pulse-glow 2s infinite ease-in-out;
+    }
+    @keyframes pulse-glow {
+
+      0%, 100% { opacity: 1; transform: scale(1); }
+
+      50% { opacity: 0.5; transform: scale(1.1); }
+
+    }
+
+    .glass-card {
+
+      background: rgba(10, 20, 38, 0.82);
+
+      backdrop-filter: blur(10px);
+
+      -webkit-backdrop-filter: blur(10px);
+
+    }
+
+    /* TACTILE 3D KPI PARAMETER CARDS (CURVED BORDERS, DEEP SHADOWS, ACTIVE HIGHLIGHT) */
+
+    .step-card-3d {
+
+      position: relative;
+
+      background: linear-gradient(145deg, rgba(16, 28, 54, 0.92) 0%, rgba(9, 17, 34, 0.96) 100%);
+
+      border: 1px solid rgba(56, 189, 248, 0.22);
+
+      border-radius: 16px;
+
+      box-shadow: 
+
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.16),
+
+        inset 0 -1px 2px 0 rgba(0, 0, 0, 0.5),
+
+        0 10px 24px -4px rgba(0, 0, 0, 0.75),
+
+        0 4px 6px -2px rgba(0, 0, 0, 0.5);
+
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+      cursor: pointer;
+
+      user-select: none;
+
+    }
+
+    .step-card-3d:hover {
+
+      transform: translateY(-5px) scale(1.02);
+
+      border-color: rgba(0, 229, 255, 0.7);
+
+      box-shadow: 
+
+        inset 0 1px 2px 0 rgba(255, 255, 255, 0.32),
+
+        0 16px 32px -4px rgba(0, 0, 0, 0.85),
+
+        0 0 22px rgba(0, 229, 255, 0.45);
+
+    }
+
+    .step-card-3d.active {
+
+      transform: translateY(-4px) scale(1.02);
+
+      background: linear-gradient(145deg, rgba(14, 44, 84, 0.95) 0%, rgba(7, 24, 50, 0.98) 100%);
+
+      border: 1.5px solid #00e5ff;
+
+      box-shadow: 
+
+        inset 0 1px 3px 0 rgba(255, 255, 255, 0.45),
+
+        0 18px 36px -4px rgba(0, 0, 0, 0.9),
+
+        0 0 28px rgba(0, 229, 255, 0.65);
+
+    }
+
+    .equipment-marker {
+
+      position: absolute;
+
+      transform: translate(-50%, -100%);
+
+      pointer-events: none;
+
+      transition: opacity 0.2s;
+
+    }
+
+  
+      .hidden { display: none !important; }
+    </style>
+
+</head>
+
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+
+
+  <!-- TOP HEADER (Clean SCADA Bar) -->
+
+  <header id="appHeader" class="bg-[#08101e] border-b border-gray-800/80 sticky top-0 z-50 px-4 h-[52px] min-h-[52px] max-h-[52px] flex items-center flex-shrink-0">
+
+    <div class="max-w-[1720px] mx-auto flex flex-wrap items-center justify-between gap-3">
+
+      <!-- Logo & Title -->
+
+      <div class="flex items-center space-x-3">
+
+        <div class="h-8 w-8 rounded-lg bg-gradient-to-tr from-cyan-500 via-blue-500 to-emerald-400 p-0.5 flex items-center justify-center shadow">
+
+          <div class="h-full w-full bg-[#070e1a] rounded-[6px] flex items-center justify-center">
+
+            <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i>
+
+          </div>
+
+        </div>
+
+        <div>
+
+          <div class="flex items-center gap-2">
+
+            <h1 class="font-bold text-sm sm:text-base text-white tracking-wide">DIGITAL TWIN DÂY CHUYỀN SẢN XUẤT PHÂN BÓN NPK</h1>
+
+            <span class="text-xs text-cyan-500 font-mono font-bold px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30">SCADA 3D PRO</span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- Sync status & Quick controls -->
+
+      <div class="flex items-center gap-2 sm:gap-3 text-xs">
+
+        <div id="syncBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-900/90 border border-gray-700/80">
+
+          <span class="w-2 h-2 rounded-full bg-emerald-400 badge-pulse"></span>
+
+          <span id="syncText" class="text-gray-300 text-[11px] font-mono">Đã đồng bộ Google Sheet</span>
+
+        </div>
+
+
+
+        <button onclick="triggerSync()" class="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg font-semibold shadow transition active:scale-95">
+
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="syncIcon"></i>
+
+          <span>Đồng bộ ngay</span>
+
+        </button>
+
+
+
+        <a href="https://docs.google.com/spreadsheets/d/1D-9gS09nzviXf2DVle7na6spGVMH0BEAhJiVwY8m-cQ/edit?gid=0" target="_blank" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-gray-300 text-[11px] border border-gray-700 transition">
+
+          <span>Mở Sheet Gốc</span>
+
+          <i data-lucide="external-link" class="w-3 h-3"></i>
+
+        </a>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+
+  <!-- NAVIGATION TABS -->
+
+  <nav id="appNav" class="bg-[#08101e] border-b border-gray-800 px-4 w-full h-[44px] min-h-[44px] max-h-[44px] flex items-center flex-shrink-0">
+
+    <div class="max-w-[1720px] mx-auto flex overflow-x-auto space-x-1 text-xs font-semibold py-1">
+
+      <button onclick="switchTab('tab-3d')" id="nav-tab-3d" class="tab-btn px-4 py-2 rounded-lg bg-cyan-950/40 text-cyan-400 border border-cyan-500/30 flex items-center gap-2 whitespace-nowrap">
+
+        <i data-lucide="box" class="w-3.5 h-3.5"></i>
+
+        <span>Sơ Đồ 3D SCADA Dây Chuyền</span>
+
+      </button>
+
+
+
+      <button onclick="switchTab('tab-agent1')" id="nav-tab-agent1" class="tab-btn px-4 py-2 rounded-lg text-gray-400 hover:text-gray-200 border border-transparent flex items-center gap-2 whitespace-nowrap">
+
+        <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded font-bold">AGENT 1</span>
+
+        <span>Kiểm toán Dữ liệu Đúng/Đủ</span>
+
+        <span id="badgeAgent1Alerts" class="px-2 py-0.5 rounded-full text-xs bg-red-500/20 text-red-400 border border-red-500/30 font-bold">18 Cảnh báo</span>
+
+      </button>
+
+
+
+      <button onclick="switchTab('tab-agent2')" id="nav-tab-agent2" class="tab-btn px-4 py-2 rounded-lg text-gray-400 hover:text-gray-200 border border-transparent flex items-center gap-2 whitespace-nowrap">
+
+        <span class="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded font-bold">AGENT 2</span>
+
+        <span>AI Vision Phân tích Ảnh Mẫu</span>
+
+      </button>
+
+
+
+      <button onclick="switchTab('tab-agent3')" id="nav-tab-agent3" class="tab-btn px-4 py-2 rounded-lg text-gray-400 hover:text-gray-200 border border-transparent flex items-center gap-2 whitespace-nowrap">
+
+        <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded font-bold">AGENT 3</span>
+
+        <span>Tối ưu Thông số & Đơn Hàng Mới</span>
+
+      </button>
+
+
+
+      <button onclick="switchTab('tab-data')" id="nav-tab-data" class="tab-btn px-4 py-2 rounded-lg text-gray-400 hover:text-gray-200 border border-transparent flex items-center gap-2 whitespace-nowrap">
+
+        <i data-lucide="table-2" class="w-3.5 h-3.5"></i>
+
+        <span>Nhật Ký Ca (Sheet)</span>
+
+      </button>
+
+    </div>
+
+  </nav>
+
+
+
+  <!-- MAIN VIEWPORT -->
+
+  <main id="appMain" class="app-main-viewport max-w-[1720px] mx-auto px-4 py-3 w-full flex-1 min-h-0 flex flex-col overflow-hidden">
+
+
+
+    <!-- ==================== TAB 0: 3D DIGITAL TWIN & REAL-TIME DASHBOARD ==================== -->
+    <div id="tab-3d" class="tab-content block h-full flex flex-col min-h-0 flex-1 overflow-hidden">
+      
+      <!-- TOP CONTROL STRIP FOR SHIFT SELECTION & GOOGLE SHEET PARAMETERS (Technical HUD) -->
+      <div class="bg-[#091120] border border-gray-800 rounded-[10px] px-3.5 py-2 mb-3 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs flex-shrink-0">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <div class="flex items-center gap-1.5 bg-[#0e192f] border border-cyan-500/30 px-2.5 py-1 rounded-lg">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 badge-pulse"></span>
+            <span class="text-gray-400 text-xs font-semibold">CA:</span>
+            <select id="selectShiftPicker" onchange="onSelectShiftChange(this.value)" class="bg-transparent text-cyan-300 font-mono font-bold focus:outline-none cursor-pointer text-xs">
+              <!-- Populated from Google Sheet -->
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2.5 font-mono text-xs bg-gray-900/70 px-2.5 py-1 rounded-lg border border-gray-800">
+            <span class="text-gray-400">Ngày: <b id="shiftFieldNgay" class="text-white">--</b></span>
+            <span class="text-gray-600">|</span>
+            <span class="text-gray-400">Ca: <b id="shiftFieldCa" class="text-amber-400">--</b></span>
+            <span class="text-gray-600">|</span>
+            <span class="text-gray-400">Tổ: <b id="shiftFieldToSX" class="text-gray-300">Tổ 3</b></span>
+            <span class="text-gray-600">|</span>
+            <span class="text-gray-400">SP: <b id="shiftFieldCongThuc" class="text-emerald-400">NPK 25.9.9</b></span>
+          </div>
+        </div>
+
+        <!-- Fuel Telemetry -->
+        <div class="flex items-center gap-2.5 font-mono text-xs bg-[#0c182e] border border-gray-800 px-2.5 py-1 rounded-lg">
+          <span class="text-gray-400">Nhiên liệu:</span>
+          <span class="text-amber-400">Than: <b id="shiftFieldThan" class="text-white">--</b></span>
+          <span class="text-purple-400">Vỏ điều: <b id="shiftFieldVoDieu" class="text-white">--</b></span>
+          <span class="text-gray-400">Trấu: <b id="shiftFieldTrau" class="text-gray-300">--</b></span>
+          <span id="shiftFuelBadge" class="px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 text-amber-400">Chưa điền</span>
+        </div>
+      </div>
+
+      <!-- MAIN SPLIT WORKSPACE: 1/3 FOR 3D TWIN (4 cols) & 2/3 FOR PROCESS TELEMETRY (8 cols) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch flex-1 min-h-0 h-full">
+        
+        <!-- LEFT 1/3: COMPACT MINIMALIST 3D DIGITAL TWIN -->
+        <div class="lg:col-span-4 flex flex-col gap-3 h-full min-h-0">
+          <div class="relative rounded-[10px] border border-cyan-500/30 bg-[#070e1c] overflow-hidden shadow-lg flex flex-col flex-1 min-h-0 h-full">
+            <!-- Top Header Inside 3D: Title & Power -->
+            <div class="p-2.5 bg-[#091122]/90 border-b border-gray-800/80 flex items-center justify-between text-xs font-mono flex-shrink-0">
+              <div class="flex items-center gap-2 text-cyan-300">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 badge-pulse"></span>
+                <span class="font-bold text-xs tracking-wide">3D DIGITAL TWIN</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button onclick="togglePlantOperation()" id="btnPlantPower" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 transition active:scale-95">
+                  <i data-lucide="play" class="w-3 h-3"></i>
+                  <span id="txtPlantPower">Chạy</span>
+                </button>
+                <button onclick="reset3DCamera()" class="p-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300" title="Reset toàn cảnh">
+                  <i data-lucide="maximize" class="w-3 h-3"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- THREE.JS 3D CANVAS (Tự động giãn 100% chiều cao) -->
+            <div id="three-canvas-container" class="w-full relative flex-1 min-h-0 h-full">
+              <!-- Minimal Hint overlay -->
+              <div class="absolute bottom-2 right-2 text-xs text-gray-400 font-mono pointer-events-none bg-black/50 px-2 py-0.5 rounded">
+                🖱️ Xoay 360° | Zoom
+              </div>
+            </div>
+
+            <!-- Bottom Station Quick Switcher Pills -->
+            <div class="p-2 bg-[#08101e] border-t border-gray-800/80 grid grid-cols-4 gap-1.5 text-xs font-mono flex-shrink-0">
+              <button onclick="setCameraView('overview')" id="btnCamOverview" class="cam-btn px-2 py-1.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40 text-center font-bold flex items-center justify-center gap-1">
+                <span class="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span> Toàn cảnh
+              </button>
+              <button onclick="onStepCardClick(2)" class="cam-btn px-2 py-1.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-center font-medium">1. Phễu nạp</button>
+              <button onclick="onStepCardClick(3)" class="cam-btn px-2 py-1.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-center font-medium">2. Vê viên</button>
+              <button onclick="onStepCardClick(1)" class="cam-btn px-2 py-1.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-center font-medium">3. Lò đốt</button>
+              <button onclick="onStepCardClick(4)" class="cam-btn px-2 py-1.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-center font-medium">4. Vào sấy</button>
+              <button onclick="onStepCardClick(5)" class="cam-btn px-2 py-1.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-center font-medium">5. Máy sấy</button>
+              <button onclick="onStepCardClick(6)" class="cam-btn px-2 py-1.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-center font-medium">6. Sàng rây</button>
+              <button onclick="setCameraView('cum7')" class="cam-btn px-2 py-1.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 text-center font-medium">7. Đóng bao</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT 2/3: PROCESS PARAMETER CARDS & TECHNICAL METRICS -->
+        <div class="lg:col-span-8 flex flex-col gap-3 h-full min-h-0">
+          
+          <!-- 6 PROCESS STEP CARDS (High-density 3x2 grid) -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-shrink-0">
+            
+            <!-- Step 1: Lò hơi & Nhiên liệu -->
+            <div id="stepCard1" onclick="onStepCardClick(1)" class="step-card-3d p-3 cursor-pointer" title="Click để tiêu điểm 3D Cụm Lò Đốt & Thùng Sấy">
+              <div class="flex items-center justify-between text-[13px] text-gray-400 font-mono font-semibold uppercase tracking-wider">
+                <span>1. LÒ HƠI & NHIÊN LIỆU</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+              </div>
+              <div class="flex items-baseline justify-between mt-1">
+                <span id="cardValPressure" class="text-[20px] font-bold font-mono text-white leading-tight">1.01 MPa</span>
+                <span id="cardValSteamFlow" class="text-xs font-bold font-mono text-red-400">1.44 t/h</span>
+              </div>
+              <div class="mt-1.5 pt-1.5 border-t border-gray-800/80 flex justify-between text-xs text-gray-400 font-mono">
+                <span>Than: <b id="cardMiniThan" class="text-amber-400 font-semibold">Chưa nhập</b></span>
+                <span>Vỏ điều: <b id="cardMiniVoDieu" class="text-purple-400 font-semibold">--</b></span>
+              </div>
+            </div>
+
+            <!-- Step 2: Phễu nạp liệu -->
+            <div id="stepCard2" onclick="onStepCardClick(2)" class="step-card-3d p-3 cursor-pointer" title="Click để tiêu điểm 3D Phễu Nạp Liệu & Cân Định Lượng">
+              <div class="flex items-center justify-between text-[13px] text-gray-400 font-mono font-semibold uppercase tracking-wider">
+                <span>2. PHỄU NẠP LIỆU</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+              </div>
+              <div class="flex items-baseline justify-between mt-1">
+                <span class="text-[20px] font-bold font-mono text-white leading-tight">Ẩm: 1.49 %</span>
+                <span class="text-xs font-mono text-gray-400">Tải: <b class="text-gray-200">35 t/h</b></span>
+              </div>
+              <div class="mt-1.5 pt-1.5 border-t border-gray-800/80 flex justify-between text-xs text-gray-400 font-mono">
+                <span>Tổ SX: <b id="cardMiniToSX" class="text-cyan-400 font-semibold">3</b></span>
+                <span>Trạng thái: <b class="text-emerald-400 font-semibold">Ổn định</b></span>
+              </div>
+            </div>
+
+            <!-- Step 3: Máy tạo hạt -->
+            <div id="stepCard3" onclick="onStepCardClick(3)" class="step-card-3d active p-3 cursor-pointer" title="Click để tiêu điểm 3D Máy Tạo Hạt Thùng Vê Viên">
+              <div class="flex items-center justify-between text-[13px] text-cyan-400 font-mono font-semibold uppercase tracking-wider">
+                <span>3. MÁY TẠO HẠT (VÊ VIÊN)</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 badge-pulse"></span>
+              </div>
+              <div class="flex items-baseline justify-between mt-1">
+                <span id="cardGranTemp" class="text-[20px] font-bold font-mono text-white leading-tight">Nhiệt: 54 °C</span>
+                <span class="text-xs font-mono text-cyan-300">Ẩm: <b class="text-white">2.14%</b></span>
+              </div>
+              <div class="mt-1.5 pt-1.5 border-t border-cyan-500/30 flex justify-between text-xs text-cyan-300 font-mono">
+                <span>SP: <b id="cardMiniFormula" class="text-emerald-400 font-semibold">25.9.9</b></span>
+                <span class="text-cyan-400 font-bold">Thùng quay</span>
+              </div>
+            </div>
+
+            <!-- Step 4: Vào máy sấy -->
+            <div id="stepCard4" onclick="onStepCardClick(4)" class="step-card-3d p-3 cursor-pointer" title="Click để tiêu điểm 3D Đầu Vào Thùng Sấy Quay">
+              <div class="flex items-center justify-between text-[13px] text-gray-400 font-mono font-semibold uppercase tracking-wider">
+                <span>4. VÀO MÁY SẤY</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+              </div>
+              <div class="flex items-baseline justify-between mt-1">
+                <span id="cardDryerInletTemp" class="text-[20px] font-bold font-mono text-amber-400 leading-tight">70 °C</span>
+                <span class="text-xs font-mono text-gray-400">Ẩm vào: <b class="text-gray-200">2.14%</b></span>
+              </div>
+              <div class="mt-1.5 pt-1.5 border-t border-gray-800/80 flex justify-between text-xs text-gray-400 font-mono">
+                <span>Áp suất: <b class="text-gray-300 font-semibold">-25 Pa</b></span>
+                <span>Khí nóng cấp</span>
+              </div>
+            </div>
+
+            <!-- Step 5: Cửa ra sấy -->
+            <div id="stepCard5" onclick="onStepCardClick(5)" class="step-card-3d p-3 cursor-pointer" title="Click để tiêu điểm 3D Cửa Ra Sấy & Thùng Làm Nguội">
+              <div class="flex items-center justify-between text-[13px] text-gray-400 font-mono font-semibold uppercase tracking-wider">
+                <span>5. CỬA RA SẤY</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-orange-400"></span>
+              </div>
+              <div class="flex items-baseline justify-between mt-1">
+                <span id="cardDryerOutletTemp" class="text-[20px] font-bold font-mono text-white leading-tight">65 °C</span>
+                <span class="text-xs font-mono text-emerald-400 font-bold">Ẩm ra: <b class="text-emerald-300">1.54%</b></span>
+              </div>
+              <div class="mt-1.5 pt-1.5 border-t border-gray-800/80 flex justify-between text-xs text-gray-400 font-mono">
+                <span class="text-emerald-400">Đạt chuẩn &lt; 2.0%</span>
+                <span class="text-gray-400">Qua làm nguội</span>
+              </div>
+            </div>
+
+            <!-- Step 6: Sàng rây & Đầu ra -->
+            <div id="stepCard6" onclick="onStepCardClick(6)" class="step-card-3d p-3 cursor-pointer" title="Click để tiêu điểm 3D Máy Sàng Rung 2 Lớp & Silo Đóng Bao">
+              <div class="flex items-center justify-between text-[13px] text-emerald-400 font-mono font-semibold uppercase tracking-wider">
+                <span>6. SÀNG RÂY & ĐẦU RA</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              </div>
+              <div class="flex items-baseline justify-between mt-1">
+                <span class="text-[20px] font-bold font-mono text-white leading-tight">2-4mm: 22%</span>
+                <span class="text-xs font-mono text-cyan-400">60 tấn</span>
+              </div>
+              <div class="mt-1.5 pt-1.5 border-t border-gray-800/80 flex justify-between text-xs text-purple-400 font-mono">
+                <span class="text-gray-400">Sàng 2 tầng lưới</span>
+                <span class="text-emerald-400 font-semibold">Silo đóng bao</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- LOWER TECHNICAL TELEMETRY: 7-CA CHART & GRAIN SIZE -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 flex-1 min-h-0 items-stretch">
+
+            <!-- Biểu đồ 7 ca gần nhất (7 Cols on md/lg) -->
+            <div class="md:col-span-7 bg-[#091120] border border-gray-800 rounded-[10px] p-3.5 shadow-md flex flex-col justify-between h-full min-h-0">
+              <div class="flex items-center justify-between pb-2 mb-2 border-b border-gray-800 text-xs flex-shrink-0">
+                <div class="flex items-center gap-1.5 text-white font-bold font-mono text-[13px]">
+                  <i data-lucide="trending-up" class="w-4 h-4 text-cyan-400"></i>
+                  <span>DIỄN BIẾN NHIỆT ĐỘ & ĐỘ ẨM (7 CA)</span>
+                </div>
+                <select id="selectChartMetric" onchange="updateRecentShiftsChart()" class="bg-[#0f1b32] text-xs text-cyan-400 border border-gray-700 rounded px-2.5 py-1 focus:outline-none cursor-pointer font-mono font-semibold">
+                  <option value="temp">Nhiệt độ (°C)</option>
+                  <option value="moisture">Độ ẩm (%)</option>
+                </select>
+              </div>
+
+              <div class="flex-1 min-h-0 w-full relative my-1">
+                <canvas id="chartRecentShifts"></canvas>
+              </div>
+
+              <div id="chartLegendCustom" class="flex items-center justify-center gap-4 text-xs text-gray-400 pt-2 border-t border-gray-800/80 font-mono flex-shrink-0">
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-1.5 bg-amber-400 inline-block rounded"></span> Nhiệt hạt</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-1.5 bg-red-500 inline-block rounded"></span> Khí vào</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-1.5 bg-cyan-400 inline-block rounded"></span> Khí ra</span>
+              </div>
+            </div>
+
+            <!-- Phân bố cỡ hạt & Ghi chú (5 Cols on md/lg) -->
+            <div class="md:col-span-5 bg-[#091120] border border-gray-800 rounded-[10px] p-3.5 shadow-md flex flex-col justify-between text-xs h-full min-h-0">
+              <div>
+                <div class="flex items-center justify-between pb-2 mb-2.5 border-b border-gray-800 flex-shrink-0">
+                  <span class="font-bold text-white font-mono text-[13px]">CỠ HẠT SÀNG RÂY</span>
+                  <span class="text-xs text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-bold">2 Lớp Lưới</span>
+                </div>
+
+                <div class="mb-3">
+                  <div class="w-full bg-gray-900 rounded-full h-3 flex overflow-hidden border border-gray-800 mb-2">
+                    <div class="bg-amber-400 h-full" style="width: 32%" title="<2mm: 32%"></div>
+                    <div class="bg-emerald-400 h-full" style="width: 22%" title="2-4mm: 22%"></div>
+                    <div class="bg-red-500 h-full" style="width: 46%" title=">4mm: 46%"></div>
+                  </div>
+
+                  <div class="grid grid-cols-3 gap-2 text-center font-mono">
+                    <div class="bg-gray-950 p-2 rounded-lg border border-gray-800/80">
+                      <span class="text-gray-400 text-xs block">&lt;2mm</span>
+                      <span class="text-amber-400 font-bold text-xs">32%</span>
+                    </div>
+                    <div class="bg-cyan-950/40 p-2 rounded-lg border border-cyan-500/30">
+                      <span class="text-cyan-300 text-xs block">2-4mm</span>
+                      <span class="text-emerald-400 font-bold text-xs">22%</span>
+                    </div>
+                    <div class="bg-gray-950 p-2 rounded-lg border border-gray-800/80">
+                      <span class="text-gray-400 text-xs block">&gt;4mm</span>
+                      <span class="text-red-400 font-bold text-xs">46%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Ghi chú vận hành ca -->
+              <div class="bg-gray-950 p-3 rounded-lg border border-gray-800/80 flex-shrink-0">
+                <div class="flex items-center gap-1.5 text-gray-400 mb-1 font-mono text-xs font-semibold">
+                  <i data-lucide="file-text" class="w-3.5 h-3.5 text-cyan-400"></i>
+                  <span>Ghi chú ca:</span>
+                </div>
+                <p id="shiftFieldGhiChu" class="text-gray-300 text-xs font-mono italic">Không có ghi chú đặc biệt cho ca này.</p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+
+              <!-- ==================== TAB 1: AGENT 1 - KIỂM TOÁN DỮ LIỆU ĐÚNG ĐỦ ==================== -->
+    <div id="tab-agent1" class="tab-content hidden h-full flex flex-col min-h-0 flex-1 overflow-hidden">
+      <div class="flex gap-4 h-full flex-1 min-h-0 items-stretch">
+        
+        <!-- CỘT TRÁI 340PX CỐ ĐỊNH, HEIGHT 100%, NÚT QUÉT NEO ĐÁY -->
+        <div class="w-[340px] flex-shrink-0 bg-[#091120] border border-gray-800 rounded-[10px] p-4 flex flex-col justify-between shadow-lg h-full min-h-0">
+          <div>
+            <div class="flex items-center gap-2.5 mb-3">
+              <div class="p-2 rounded-lg bg-amber-500/10 text-amber-400">
+                <i data-lucide="shield-alert" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-[15px] leading-tight">Agent 1: Data Audit Engine</h3>
+                <p class="text-xs text-gray-400">Kiểm tra tính đúng, đủ & logic dữ liệu hằng ngày</p>
+              </div>
+            </div>
+
+            <!-- Hero completeness score -->
+            <div class="my-3.5 p-4 rounded-xl bg-gray-950/60 border border-gray-800 text-center">
+              <span class="text-xs uppercase text-gray-400 tracking-wider font-semibold">Chỉ Số Điền Đầy Đủ</span>
+              <div id="agent1ScoreDisplay" class="text-[36px] font-black text-emerald-400 font-mono my-1 leading-tight">--%</div>
+              <p id="agent1ScoreSubtitle" class="text-xs text-gray-400">Đang quét toàn bộ bảng tính...</p>
+            </div>
+
+            <!-- 4 telemetry statistics rows with 10px 14px padding -->
+            <div class="space-y-2 text-xs font-mono">
+              <div class="flex justify-between items-center px-3.5 py-2.5 rounded-lg bg-gray-900/60 border border-gray-800/60">
+                <span class="text-gray-300">Tổng số ca:</span>
+                <span id="agent1TotalRecs" class="font-bold text-white text-[15px]">--</span>
+              </div>
+              <div class="flex justify-between items-center px-3.5 py-2.5 rounded-lg bg-red-950/30 border border-red-500/20">
+                <span class="text-red-300">Ca thiếu dữ liệu nhiên liệu:</span>
+                <span id="agent1MissingFuel" class="font-bold text-red-400 text-[15px]">--</span>
+              </div>
+              <div class="flex justify-between items-center px-3.5 py-2.5 rounded-lg bg-amber-950/30 border border-amber-500/20">
+                <span class="text-amber-300">Bất nhất Mã ca và Cột Ca:</span>
+                <span id="agent1InconsistentCa" class="font-bold text-amber-400 text-[15px]">--</span>
+              </div>
+              <div class="flex justify-between items-center px-3.5 py-2.5 rounded-lg bg-gray-900/60 border border-gray-800/60">
+                <span class="text-gray-300">Ngày chỉ có 1 ca sản xuất:</span>
+                <span id="agent1SingleShift" class="font-bold text-gray-200 text-[15px]">--</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-auto pt-3">
+            <button onclick="triggerSync()" class="w-full py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-100 text-xs font-semibold rounded-lg border border-gray-700 transition flex items-center justify-center gap-2 shadow active:scale-[0.985]">
+              <i data-lucide="scan-line" class="w-4 h-4 text-cyan-400"></i>
+              <span>Quét Lại Dữ Liệu Ngay</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- CỘT PHẢI FLEX-1: DANH SÁCH CẢNH BÁO CUỘN NỘI BỘ MẢNH -->
+        <div class="flex-1 min-w-0 bg-[#091120] border border-gray-800 rounded-[10px] p-4 flex flex-col shadow-lg h-full min-h-0">
+          <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-800 flex-shrink-0">
+            <div>
+              <h3 class="font-bold text-white text-[15px]">Danh Sách Cảnh Báo Cần Bổ Sung Thông Tin</h3>
+              <p class="text-xs text-gray-400 mt-0.5">Phát hiện tự động bởi thuật toán Agent 1</p>
+            </div>
+            <span id="agent1IssueCount" class="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-mono font-bold">0 Cảnh báo</span>
+          </div>
+
+          <div class="overflow-y-auto flex-1 min-h-0 space-y-2.5 pr-1.5 custom-scrollbar" id="agent1IssuesList">
+            <div class="text-center py-16 text-gray-500 text-xs">Đang tải phân tích dữ liệu...</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+          <!-- ==================== TAB 2: AGENT 2 - THỊ GIÁC MÁY ẢNH MẪU ==================== -->
+    <div id="tab-agent2" class="tab-content hidden h-full flex flex-col min-h-0 flex-1 overflow-hidden">
+      <!-- TOP SYNC STRIP: Synchronized with 3D SCADA Active Shift -->
+      <div class="mb-2.5 p-2 rounded-[10px] bg-[#091120] border border-cyan-500/30 flex flex-wrap items-center justify-between gap-2 text-xs font-mono shadow-sm flex-shrink-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span class="text-gray-400 font-bold">ĐỒNG BỘ THEO SCADA:</span>
+          <span id="agent2SyncShiftBadge" class="font-bold text-white px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/40 text-xs">--</span>
+          <span class="text-gray-600">|</span>
+          <span class="text-gray-400">NGÀY:</span>
+          <span id="agent2SyncDateBadge" class="font-bold text-gray-200">--</span>
+          <span class="text-gray-600">|</span>
+          <span class="text-gray-400">CA:</span>
+          <span id="agent2SyncCaBadge" class="font-bold text-amber-400">--</span>
+          <span class="text-gray-600">|</span>
+          <span class="text-gray-400">ĐƠN HÀNG (SP):</span>
+          <span id="agent2SyncFormulaBadge" class="font-bold text-cyan-400 px-2 py-0.5 rounded bg-gray-900 border border-gray-800">--</span>
+          <span class="text-gray-600">|</span>
+          <span class="text-gray-400">TỔ SX:</span>
+          <span id="agent2SyncToBadge" class="font-bold text-white">3</span>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          <span class="text-gray-400">Chọn nhanh Ca chụp ảnh từ Sheet:</span>
+          <select id="agent2PhotoShiftSelect" onchange="loadAgent2Sample(this.value)" class="bg-gray-900 border border-gray-700 text-cyan-300 font-mono text-xs rounded-lg px-2.5 py-1 outline-none">
+            <option value="current">-- Đồng bộ theo Ca SCADA đang chọn --</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- MAIN LAYOUT: LEFT COLUMN NARROW (col-span-3) - RIGHT COLUMN WIDER (col-span-9) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1 min-h-0 h-full items-stretch">
+        
+        <!-- LEFT COLUMN: THẺ CHỈ SỐ NHỎ GỌN -->
+        <div class="lg:col-span-4 xl:col-span-3 bg-[#091120] border border-gray-800 rounded-[10px] p-3 flex flex-col justify-between shadow-lg h-full min-h-0">
+          <div>
+            <!-- Header -->
+            <div class="flex items-center gap-2 mb-2">
+              <div class="p-1.5 rounded-lg bg-purple-500/10 text-purple-400">
+                <i data-lucide="scan" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-[14px] leading-tight">Agent 2: AI Vision Inspector</h3>
+                <p class="text-[12px] text-gray-400">Kiểm định chất lượng qua Camera</p>
+              </div>
+            </div>
+
+            <!-- Compact Score Card -->
+            <div class="my-2 p-2.5 rounded-lg bg-gray-950/60 border border-gray-800 text-center">
+              <span class="text-[12px] uppercase text-gray-400 tracking-wider font-semibold">Chỉ Số Tròn Đều & Ngoại Quan</span>
+              <div id="agent2ScoreDisplay" class="text-[34px] font-black text-emerald-400 font-mono my-0.5 leading-tight">79.6%</div>
+              <p id="agent2ScoreSubtitle" class="text-[12px] text-emerald-400 font-medium flex items-center justify-center gap-1.5">
+                <span id="agent2StatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="agent2StatusText">ĐẠT TIÊU CHUẨN XUẤT XƯỞNG</span>
+              </p>
+            </div>
+
+            <!-- Telemetry Metrics Breakdown List (13px fonts, thoáng rõ) -->
+            <div class="space-y-1.5 text-[13px] font-mono">
+              <div class="flex justify-between items-center px-3 py-1.5 rounded-lg bg-gray-900/60 border border-gray-800/60">
+                <span class="text-gray-300">Độ tròn đều (Sphericity):</span>
+                <span id="agent2Sphericity" class="font-bold text-emerald-400">79.6%</span>
+              </div>
+              <div class="flex justify-between items-center px-3 py-1.5 rounded-lg bg-cyan-950/30 border border-cyan-500/20">
+                <span class="text-cyan-300">Hạt chuẩn cỡ (2.0 - 4.0 mm):</span>
+                <span id="agent2SizeStandard" class="font-bold text-cyan-400">22%</span>
+              </div>
+              <div class="flex justify-between items-center px-3 py-1.5 rounded-lg bg-amber-950/30 border border-amber-500/20">
+                <span class="text-amber-300">Độ ẩm hạt ra sấy:</span>
+                <span id="agent2Moisture" class="font-bold text-amber-400">1.54%</span>
+              </div>
+              <div class="flex justify-between items-center px-3 py-1.5 rounded-lg bg-gray-900/60 border border-gray-800/60">
+                <span class="text-gray-300">Hạt quá cỡ (&gt; 4.0 mm):</span>
+                <span id="agent2SizeOver" class="font-bold text-gray-300">46%</span>
+              </div>
+              <div class="flex justify-between items-center px-3 py-1.5 rounded-lg bg-gray-900/60 border border-gray-800/60">
+                <span class="text-gray-300">Bụi / Hạt mịn (&lt; 2.0 mm):</span>
+                <span id="agent2SizeUnder" class="font-bold text-gray-300">32%</span>
+              </div>
+              <div class="flex justify-between items-center px-3 py-1.5 rounded-lg bg-gray-900/60 border border-gray-800/60">
+                <span class="text-gray-300">Nguy cơ vón cục (Caking):</span>
+                <span id="agent2CakingRisk" class="font-bold text-emerald-400">Thấp</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Nút Tải Ảnh Mới Để Quét AI -->
+          <div class="mt-auto pt-2 border-t border-gray-800">
+            <label class="w-full py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold rounded-lg border border-gray-700 transition flex items-center justify-center gap-2 cursor-pointer active:scale-[0.985] shadow">
+              <i data-lucide="upload-cloud" class="w-4 h-4 text-cyan-400"></i>
+              <span>Tải Ảnh Mới Để Quét AI</span>
+              <input type="file" id="imageUploader" accept="image/*" onchange="handleImageUpload(event)" class="hidden" />
+            </label>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: PHÓNG TO KHUNG ẢNH THỰC TẾ & THU GỌN ĐÁNH GIÁ THÀNH 4 CỘT NGANG -->
+        <div class="lg:col-span-8 xl:col-span-9 flex flex-col gap-2.5 h-full min-h-0 flex-1">
+          
+          <!-- SECTION 1: ẢNH THỰC TẾ PHÓNG TO (CHIẾM ~58% CHIỀU CAO CỘT PHẢI, OBJECT-FIT: CONTAIN, MODAL ZOOM) -->
+          <div class="bg-[#091120] border border-gray-800 rounded-[10px] p-3 shadow-lg flex-1 min-h-[340px] max-h-[420px] flex flex-col justify-between">
+            <!-- Header -->
+            <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-gray-800 flex-shrink-0">
+              <div class="flex items-center gap-2">
+                <h3 class="font-bold text-white text-[14px] flex items-center gap-1.5">
+                  <i data-lucide="camera" class="w-4 h-4 text-cyan-400"></i>
+                  Ảnh Thực Tế Từ Google Sheet &amp; Kết Quả Phân Tích
+                </h3>
+                <span class="text-xs text-gray-500 font-mono hidden sm:inline">(Click vào ảnh để phóng to toàn màn hình)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="openAgent2Lightbox()" class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-cyan-400 border border-gray-700 text-xs font-mono flex items-center gap-1 transition">
+                  <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i> Soi Chi Tiết
+                </button>
+                <span id="agent2StatusBadge" class="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono font-bold flex items-center gap-1.5">
+                  <span id="agent2BadgeDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span id="agent2BadgeText">PASSED</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Layout 2 Cột Trong Section 1: Cột Trái là Khung Ảnh Rộng, Cột Phải là Thanh Đo & Đánh Giá Bề Mặt -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch flex-1 min-h-0">
+              <!-- Left: Viewport Ảnh Chứa Trọn Vẹn 100% Ảnh Thực Tế, Object-Fit Contain -->
+              <div class="lg:col-span-8 flex flex-col justify-between h-full min-h-0">
+                <div class="relative w-full flex-1 min-h-[260px] rounded-lg overflow-hidden border border-gray-700/80 bg-[#070b12] flex items-center justify-center shadow-inner group cursor-zoom-in" onclick="openAgent2Lightbox()" title="Bấm để phóng to ảnh toàn màn hình">
+                  <img id="agent2Image" src="https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=800&auto=format&fit=crop&q=80" alt="Mẫu hạt phân bón" style="object-fit: contain; width: 100%; height: 100%; background-color: #070b12; border-radius: 8px;" class="transition-transform duration-300 group-hover:scale-[1.02]" />
+                  
+                  <!-- HUD Overlays -->
+                  <div class="absolute inset-0 bg-gradient-to-b from-cyan-500/5 via-transparent to-cyan-500/5 pointer-events-none"></div>
+                  <div class="absolute top-2 left-2 border-t-2 border-l-2 border-cyan-400 w-4 h-4 pointer-events-none"></div>
+                  <div class="absolute top-2 right-2 border-t-2 border-r-2 border-cyan-400 w-4 h-4 pointer-events-none"></div>
+                  <div class="absolute bottom-2 left-2 border-b-2 border-l-2 border-cyan-400 w-4 h-4 pointer-events-none"></div>
+                  <div class="absolute bottom-2 right-2 border-b-2 border-r-2 border-cyan-400 w-4 h-4 pointer-events-none"></div>
+                  
+                  <div id="agent2SourceBadge" class="absolute top-2 right-2 text-xs font-mono text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/40 flex items-center gap-1 font-bold shadow pointer-events-none">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> GOOGLE SHEET REAL PHOTO
+                  </div>
+                  <div class="absolute bottom-2 right-2 px-2 py-1 bg-black/75 rounded text-[11px] font-mono text-cyan-300 border border-cyan-500/30 flex items-center gap-1 pointer-events-none group-hover:bg-cyan-950/90 transition">
+                    <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i> Click Zoom To
+                  </div>
+                  <div class="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60 animate-pulse pointer-events-none" style="top: 48%;"></div>
+                </div>
+
+                <div class="mt-1.5 px-2 py-1 rounded bg-gray-950/80 border border-gray-800 text-center font-mono flex items-center justify-between text-xs">
+                  <span id="agent2SampleTitle" class="text-cyan-300 font-bold">Mẫu Hạt NPK 25.9.9 (Ca 2026-10-30-Ngày)</span>
+                  <span class="text-gray-400 text-xs">Camera Quang Học Độ Phân Giải Cao</span>
+                </div>
+              </div>
+
+              <!-- Right: Các thanh phân bố cỡ hạt & đánh giá bề mặt -->
+              <div class="lg:col-span-4 flex flex-col justify-between space-y-2 h-full min-h-0">
+                <!-- Size Distribution Card -->
+                <div class="p-2.5 rounded-lg bg-gray-950/80 border border-gray-800 flex-1 flex flex-col justify-between">
+                  <div class="flex items-center justify-between pb-1 mb-1 border-b border-gray-800/80">
+                    <span class="font-bold text-white text-xs font-mono flex items-center gap-1.5">
+                      <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-cyan-400"></i>
+                      Phân Bố Cỡ Hạt Thực Tế
+                    </span>
+                    <span class="text-[11px] text-gray-400 font-mono">Chuẩn: 2.0 - 4.0 mm</span>
+                  </div>
+
+                  <div class="space-y-1.5 my-auto">
+                    <div>
+                      <div class="flex justify-between text-xs mb-0.5">
+                        <span class="text-gray-200 font-medium">2.0 - 4.0 mm (Chuẩn xuất xưởng)</span>
+                        <span id="agent2BarTextStandard" class="font-mono font-bold text-emerald-400 text-xs">22%</span>
+                      </div>
+                      <div class="w-full bg-gray-900 rounded-full h-2 overflow-hidden">
+                        <div id="barSizeStandard" class="bg-emerald-400 h-2 rounded-full transition-all duration-500" style="width: 22%"></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div class="flex justify-between text-xs mb-0.5">
+                        <span class="text-gray-300 font-medium">&gt; 4.0 mm (Quá cỡ / Cần đập vụn)</span>
+                        <span id="agent2BarTextOver" class="font-mono font-bold text-amber-400 text-xs">46%</span>
+                      </div>
+                      <div class="w-full bg-gray-900 rounded-full h-2 overflow-hidden">
+                        <div id="barSizeOver" class="bg-amber-400 h-2 rounded-full transition-all duration-500" style="width: 46%"></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div class="flex justify-between text-xs mb-0.5">
+                        <span class="text-gray-300 font-medium">&lt; 2.0 mm (Hạt mịn / Bụi lọt sàng)</span>
+                        <span id="agent2BarTextUnder" class="font-mono font-bold text-red-400 text-xs">32%</span>
+                      </div>
+                      <div class="w-full bg-gray-900 rounded-full h-2 overflow-hidden">
+                        <div id="barSizeUnder" class="bg-red-400 h-2 rounded-full transition-all duration-500" style="width: 32%"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Surface Quality Card -->
+                <div class="p-2.5 rounded-lg bg-gray-950/80 border border-gray-800 flex-shrink-0">
+                  <div class="flex items-center justify-between pb-1 mb-1 border-b border-gray-800/80">
+                    <span class="font-bold text-white text-xs font-mono flex items-center gap-1.5">
+                      <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+                      Đánh Giá Bề Mặt &amp; Chống Vón
+                    </span>
+                    <span class="text-[11px] text-gray-400 font-mono">Quét quang học</span>
+                  </div>
+
+                  <div class="space-y-1 text-xs">
+                    <div class="flex items-center justify-between">
+                      <span class="text-gray-400">Trạng thái:</span>
+                      <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold text-[11px]">BỀ MẶT ĐẠT CHUẨN</span>
+                    </div>
+                    <p id="agent2SurfaceQuality" class="text-gray-300 text-xs leading-tight">
+                      Tỷ lệ bột mịn lọt sàng cao (32.0%), phân rã cơ học khi qua sàng quay.
+                    </p>
+                    <p id="agent2CakingDesc" class="text-amber-300/80 text-[11px] flex items-center gap-1 font-mono">
+                      👉 Lưu kho: Thấp nhưng tỷ lệ hao hụt cao
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 2: 4 THẺ ĐÁNH GIÁ NẰM NGANG 4 CỘT GỌN GÀNG (GRID-COLS-4, KHÔNG TRÀN TRANG) -->
+          <div class="bg-[#091120] border border-gray-800 rounded-[10px] p-2.5 shadow-lg flex-shrink-0">
+            <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-gray-800">
+              <h3 class="font-bold text-white text-[13px] flex items-center gap-1.5">
+                <i data-lucide="sliders" class="w-3.5 h-3.5 text-cyan-400"></i>
+                Đánh Giá Phân Tích Kỹ Thuật Công Nghệ &amp; Vận Hành Dây Chuyền
+              </h3>
+              <span id="agent2TechStatusBadge" class="text-xs font-mono text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-500/30 font-bold">
+                CẢNH BÁO CÔNG NGHỆ
+              </span>
+            </div>
+
+            <!-- 4 Thẻ Ngang Grid 4 Cột -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+              
+              <!-- Card 1: Cỡ Hạt & Cân Bằng Hồi Lưu -->
+              <div class="p-2 rounded-lg bg-gray-950/80 border border-gray-800 flex flex-col justify-between">
+                <div class="flex items-center justify-between pb-1 border-b border-gray-800/60 font-mono text-xs">
+                  <span class="font-bold text-white flex items-center gap-1">
+                    <i data-lucide="layers" class="w-3 h-3 text-cyan-400"></i> 1. Cỡ Hạt
+                  </span>
+                  <span class="text-amber-400 font-bold text-[11px]">LỆCH TỶ LỆ</span>
+                </div>
+                <div class="my-1 flex items-center justify-between text-xs font-mono px-1 py-0.5 rounded bg-gray-900 border border-gray-800">
+                  <span class="text-gray-400">2-4mm: <b id="techSizeStandard" class="text-emerald-400">22%</b></span>
+                  <span class="text-gray-400">&gt;4mm: <b id="techSizeOver" class="text-amber-400">46%</b></span>
+                  <span class="text-gray-400">&lt;2mm: <b id="techSizeUnder" class="text-red-400">32%</b></span>
+                </div>
+                <p id="techRecSieve" class="text-gray-300 text-xs leading-snug line-clamp-2">
+                  Bột mịn &lt;2mm chiếm 32% (chuẩn &lt;10%), gây quá tải dòng hồi lưu về đầu máy vê viên.
+                </p>
+              </div>
+
+              <!-- Card 2: Hình Thái & Độ Cầu Tròn -->
+              <div class="p-2 rounded-lg bg-gray-950/80 border border-gray-800 flex flex-col justify-between">
+                <div class="flex items-center justify-between pb-1 border-b border-gray-800/60 font-mono text-xs">
+                  <span class="font-bold text-white flex items-center gap-1">
+                    <i data-lucide="circle-dot" class="w-3 h-3 text-purple-400"></i> 2. Hình Thái
+                  </span>
+                  <span class="text-emerald-400 font-bold text-[11px]">TRUNG BÌNH</span>
+                </div>
+                <div class="my-1 flex items-center justify-between text-xs font-mono px-1 py-0.5 rounded bg-gray-900 border border-gray-800">
+                  <span class="text-gray-400">Độ tròn: <b id="techSphericityVal" class="text-emerald-400">79.6%</b></span>
+                  <span class="text-cyan-400 font-bold text-xs">1.08 kg/L</span>
+                </div>
+                <p id="techRecMorph" class="text-gray-300 text-xs leading-snug line-clamp-2">
+                  Độ tròn đạt 79.6%, bề mặt hơi xốp do bốc hơi ẩm nhanh hoặc thiếu liên kết dẻo hạt.
+                </p>
+              </div>
+
+              <!-- Card 3: Độ Ẩm & Màng Bao Chống Vón -->
+              <div class="p-2 rounded-lg bg-gray-950/80 border border-gray-800 flex flex-col justify-between">
+                <div class="flex items-center justify-between pb-1 border-b border-gray-800/60 font-mono text-xs">
+                  <span class="font-bold text-white flex items-center gap-1">
+                    <i data-lucide="droplets" class="w-3 h-3 text-blue-400"></i> 3. Độ Ẩm
+                  </span>
+                  <span class="text-emerald-400 font-bold text-[11px]">AN TOÀN</span>
+                </div>
+                <div class="my-1 flex items-center justify-between text-xs font-mono px-1 py-0.5 rounded bg-gray-900 border border-gray-800">
+                  <span class="text-gray-400">Ẩm sấy: <b id="techMoistVal" class="text-amber-400">1.54%</b></span>
+                  <span class="text-emerald-400 font-bold text-xs">Chuẩn &lt; 1.5%</span>
+                </div>
+                <p id="techRecMoist" class="text-gray-300 text-xs leading-snug line-clamp-2">
+                  Độ ẩm ra sấy 1.54% đạt chuẩn, lượng bột mịn cao làm tiêu tốn thêm màng dầu bao bọc.
+                </p>
+              </div>
+
+              <!-- Card 4: Khuyến Nghị Vận Hành Máy -->
+              <div class="p-2 rounded-lg bg-gray-950/80 border border-gray-800 flex flex-col justify-between">
+                <div class="flex items-center justify-between pb-1 border-b border-gray-800/60 font-mono text-xs">
+                  <span class="font-bold text-amber-300 flex items-center gap-1">
+                    <i data-lucide="lightbulb" class="w-3 h-3 text-amber-400"></i> 4. Khuyến Nghị
+                  </span>
+                  <span class="text-cyan-400 font-bold text-[11px]">SETPOINT CHUẨN</span>
+                </div>
+                <div class="my-1 space-y-0.5 text-xs font-mono text-gray-200">
+                  <p class="truncate"><b class="text-cyan-400">⚙️ Vê viên:</b> Tăng nhẹ chất kết dính, góc cuộn.</p>
+                  <p class="truncate"><b class="text-amber-400">🔥 Sấy:</b> Giảm nhiệt sấy đầu vào tránh nứt hạt.</p>
+                  <p class="truncate"><b class="text-emerald-400">❄️ Nguội:</b> Kiểm soát cyclone thu bụi đóng bao.</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- LIGHTBOX / MODAL ZOOM TOÀN MÀN HÌNH CHO ẢNH THỰC TẾ -->
+    <div id="agent2LightboxModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 hidden" onclick="if(event.target===this) closeAgent2Lightbox()">
+      <div class="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center">
+        <!-- Close button & title -->
+        <div class="w-full flex items-center justify-between pb-2 mb-2 border-b border-gray-800 text-white font-mono text-xs">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span id="lightboxSampleTitle" class="font-bold text-cyan-300 text-sm">Ảnh Thực Tế Mẫu Hạt Phân Bón NPK</span>
+          </div>
+          <button type="button" onclick="closeAgent2Lightbox()" class="px-3 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-600 transition flex items-center gap-1 font-bold">
+            ✕ Đóng (Esc)
+          </button>
+        </div>
+        <!-- High-res image display -->
+        <div class="relative w-full max-h-[80vh] flex items-center justify-center overflow-auto rounded-lg border border-cyan-500/40 bg-[#070b12]">
+          <img id="agent2LightboxImage" src="" alt="Mẫu hạt chi tiết" class="max-w-full max-h-[78vh] object-contain rounded" />
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ==================== TAB 3: CHUYÊN GIA - TỐI ƯU CÔNG THỨC & SETPOINT VẬN HÀNH ==================== -->
+    <div id="tab-agent3" class="tab-content hidden h-full flex flex-col min-h-0 flex-1 overflow-hidden">
+      <div class="flex gap-4 h-full flex-1 min-h-0 items-stretch">
+        
+        <!-- CỘT TRÁI (FORM THIẾT LẬP 360PX VỪA KHÍT 1 MÀN HÌNH KHÔNG CUỘN) -->
+        <div class="w-[360px] flex-shrink-0 bg-[#091120] border border-gray-800 rounded-[10px] p-3 flex flex-col justify-between shadow-lg h-full min-h-0">
+          <div class="space-y-2">
+            <!-- Header Chuyên Gia -->
+            <div class="flex items-center gap-2 pb-1.5 border-b border-gray-800">
+              <div class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
+                <i data-lucide="award" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-[15px] leading-tight">CHUYÊN GIA</h3>
+                <p class="text-xs text-gray-400">Tính toán công nghệ &amp; setpoint vận hành cho đơn hàng mới</p>
+              </div>
+            </div>
+
+            <!-- Công Thức Đơn Hàng Cần Chạy -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-xs text-gray-300 font-bold flex items-center gap-1.5">
+                  <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-cyan-400"></i>
+                  Công Thức Đơn Hàng Cần Chạy:
+                </label>
+                <span class="text-xs text-cyan-400 font-mono">Tự gõ hoặc chọn mẫu</span>
+              </div>
+              
+              <!-- Custom Formula Text Input -->
+              <div class="relative">
+                <input type="text" id="agent3CustomFormulaInput" value="25.9.9" placeholder="Ví dụ: NPK 16-16-8+TE, 20-20-15, 15-5-20..." class="w-full bg-gray-950 text-white font-mono font-bold text-xs border border-cyan-500/40 focus:border-cyan-400 rounded-lg p-2 pl-2.5 outline-none transition shadow-inner" oninput="onCustomFormulaInput(this.value)" />
+                <span class="absolute right-2.5 top-2 text-xs text-gray-500 font-mono font-bold">NPK</span>
+              </div>
+
+              <!-- Quick Formula Preset Chips -->
+              <div class="mt-1">
+                <span class="text-[11px] text-gray-400 font-mono block mb-1">MẪU CÔNG THỨC GỢI Ý (BẤM ĐỂ CHỌN):</span>
+                <div class="flex flex-wrap gap-1 font-mono text-[11px]">
+                  <button type="button" onclick="setAgent3Formula('25.9.9', 40)" class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 hover:border-cyan-500 text-gray-300 hover:text-cyan-300 transition">25.9.9 (Đạm cao)</button>
+                  <button type="button" onclick="setAgent3Formula('16-16-8+TE', 50)" class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 hover:border-cyan-500 text-gray-300 hover:text-cyan-300 transition">16-16-8+TE</button>
+                  <button type="button" onclick="setAgent3Formula('13.7.26', 40)" class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 hover:border-cyan-500 text-gray-300 hover:text-cyan-300 transition">13.7.26 (Kali cao)</button>
+                  <button type="button" onclick="setAgent3Formula('20.20.15', 40)" class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 hover:border-cyan-500 text-gray-300 hover:text-cyan-300 transition">20.20.15</button>
+                  <button type="button" onclick="setAgent3Formula('30.9.9', 35)" class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 hover:border-cyan-500 text-gray-300 hover:text-cyan-300 transition">30.9.9</button>
+                  <button type="button" onclick="setAgent3Formula('15-5-20', 40)" class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 hover:border-cyan-500 text-gray-300 hover:text-cyan-300 transition">15-5-20</button>
+                  <button type="button" onclick="setAgent3Formula('12-12-17+2MgO', 45)" class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 hover:border-cyan-500 text-gray-300 hover:text-cyan-300 transition">12-12-17+2MgO</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Target Production Quantity & 24h Capacity Selection (1 Ngày 2 Ca, Mỗi Ca 12h) -->
+            <div class="space-y-1.5">
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <label class="text-gray-300 block mb-0.5 font-semibold flex items-center justify-between">
+                    <span>Sản Lượng 1 Ca (12h):</span>
+                    <span class="text-cyan-400 font-mono text-[11px]">1 ngày 2 ca</span>
+                  </label>
+                  <div class="relative">
+                    <input type="number" id="inputTargetTons" value="40" step="1" min="10" max="100" class="w-full bg-gray-950 text-white font-mono font-bold text-xs border border-gray-700 focus:border-cyan-400 rounded-lg p-1.5 pl-2 outline-none" oninput="onCustomTonsInput(this.value)" />
+                    <span class="absolute right-2 top-1.5 text-xs text-gray-400 font-mono">tấn/ca</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="text-gray-300 block mb-0.5 font-semibold flex items-center justify-between">
+                    <span>Công Suất 24h (2 Ca):</span>
+                    <span id="badgeTargetRate" class="text-emerald-400 font-mono font-bold text-[11px]">~3.33 t/h</span>
+                  </label>
+                  <div class="relative">
+                    <input type="number" id="inputCapacity24h" value="80" step="2" min="20" max="200" class="w-full bg-gray-950 text-emerald-400 font-mono font-bold text-xs border border-emerald-500/40 focus:border-emerald-400 rounded-lg p-1.5 pl-2 outline-none" oninput="on24hCapacityInput(this.value)" />
+                    <span class="absolute right-2 top-1.5 text-xs text-gray-400 font-mono">tấn/24h</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Nút chọn nhanh công suất dự kiến 24h -->
+              <div>
+                <span class="text-[11px] text-gray-400 font-mono block mb-1">TỰ CHỌN MỐC 24H:</span>
+                <div class="grid grid-cols-5 gap-1 font-mono text-[11px]">
+                  <button type="button" onclick="select24hCapacity(80)" class="px-1 py-0.5 rounded bg-gray-950 border border-gray-800 hover:border-emerald-500 text-gray-300 hover:text-emerald-300 transition text-center">80t <span class="text-[9px] block text-gray-500">(40t/ca)</span></button>
+                  <button type="button" onclick="select24hCapacity(100)" class="px-1 py-0.5 rounded bg-gray-950 border border-gray-800 hover:border-emerald-500 text-gray-300 hover:text-emerald-300 transition text-center">100t <span class="text-[9px] block text-gray-500">(50t/ca)</span></button>
+                  <button type="button" onclick="select24hCapacity(120)" class="px-1 py-0.5 rounded bg-gray-950 border border-gray-800 hover:border-emerald-500 text-gray-300 hover:text-emerald-300 transition text-center">120t <span class="text-[9px] block text-gray-500">(60t/ca)</span></button>
+                  <button type="button" onclick="select24hCapacity(140)" class="px-1 py-0.5 rounded bg-gray-950 border border-gray-800 hover:border-emerald-500 text-gray-300 hover:text-emerald-300 transition text-center">140t <span class="text-[9px] block text-gray-500">(70t/ca)</span></button>
+                  <button type="button" onclick="select24hCapacity(160)" class="px-1 py-0.5 rounded bg-gray-950 border border-gray-800 hover:border-emerald-500 text-gray-300 hover:text-emerald-300 transition text-center">160t <span class="text-[9px] block text-gray-500">(80t/ca)</span></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- CÔNG NGHỆ (CỐ ĐỊNH) & THỜI TIẾT 12 THÁNG CẦN THƠ -->
+            <div class="space-y-1.5">
+              <div>
+                <label class="text-gray-300 block mb-0.5 font-semibold text-xs flex items-center justify-between">
+                  <span>Công Nghệ Dây Chuyền:</span>
+                  <span class="text-[11px] text-emerald-400 bg-emerald-950/80 px-1.5 py-0.2 rounded font-mono font-bold border border-emerald-500/30">Cố Định Chuẩn</span>
+                </label>
+                <div class="w-full bg-gray-900/90 text-cyan-300 font-bold border border-gray-700 rounded-lg px-2 py-1.5 text-xs flex items-center justify-between shadow-inner">
+                  <span class="flex items-center gap-1.5">
+                    <i data-lucide="cylinder" class="w-4 h-4 text-cyan-400"></i>
+                    Thùng quay hơi nước
+                  </span>
+                  <span class="text-gray-400 text-[11px] font-mono">Drying Drum</span>
+                </div>
+                <input type="hidden" id="agent3MethodSelect" value="steam_drum" />
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-0.5">
+                  <label class="text-gray-300 font-semibold text-xs flex items-center gap-1.5">
+                    <i data-lucide="cloud-rain" class="w-3.5 h-3.5 text-cyan-400"></i>
+                    Thời Tiết (Cần Thơ - 12 Tháng):
+                  </label>
+                  <span id="canThoHumBadge" class="text-xs text-cyan-400 font-mono font-bold">Ẩm TB: ~82%</span>
+                </div>
+                <select id="agent3MonthSelect" onchange="onCanThoMonthChange(this.value)" class="w-full bg-gray-950 text-cyan-300 font-mono font-bold border border-gray-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-cyan-400 shadow-inner">
+                  <option value="1">Tháng 1 — Mùa khô (Độ ẩm TB: ~78%)</option>
+                  <option value="2">Tháng 2 — Mùa khô (Độ ẩm TB: ~75% - thấp nhất)</option>
+                  <option value="3">Tháng 3 — Mùa khô (Độ ẩm TB: ~74% - nắng nóng)</option>
+                  <option value="4">Tháng 4 — Nắng gắt (Độ ẩm TB: ~76%)</option>
+                  <option value="5">Tháng 5 — Đầu mùa mưa (Độ ẩm TB: ~82%)</option>
+                  <option value="6">Tháng 6 — Mưa dầm (Độ ẩm TB: ~85%)</option>
+                  <option value="7">Tháng 7 — Mưa nhiều (Độ ẩm TB: ~86%)</option>
+                  <option value="8">Tháng 8 — Mưa ngâu (Độ ẩm TB: ~87% - ẩm rất cao)</option>
+                  <option value="9">Tháng 9 — Triều cường (Độ ẩm TB: ~88% - cao nhất)</option>
+                  <option value="10">Tháng 10 — Mưa triều (Độ ẩm TB: ~86%)</option>
+                  <option value="11" selected>Tháng 11 — Hiện tại (Độ ẩm TB: ~82% - giao mùa)</option>
+                  <option value="12">Tháng 12 — Chuyển mùa (Độ ẩm TB: ~79%)</option>
+                </select>
+                <input type="hidden" id="agent3SeasonSelect" value="wet" />
+              </div>
+            </div>
+
+            <!-- Nút Tính Toán Chuyên Gia -->
+            <button onclick="calculateFutureOrder()" id="btnAgent3Calculate" class="w-full py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 active:scale-[0.985] text-white font-bold text-xs rounded-lg shadow-md transition-all flex items-center justify-center gap-2 group">
+              <i data-lucide="zap" class="w-4 h-4 text-amber-300 animate-pulse group-hover:scale-110 transition-transform"></i>
+              <span>CHUYÊN GIA TÍNH TOÁN CHI TIẾT</span>
+            </button>
+          </div>
+
+          <!-- YÊU CẦU 2.1: KHỐI CĂN CỨ TÍNH TOÁN KỸ THUẬT THU GỌN THÀNH ACCORDION / TOOLTIP ĐỂ GIẢI PHÓNG DIỆN TÍCH DỌC -->
+          <div class="mt-auto pt-2 border-t border-gray-800 text-xs font-mono">
+            <details class="group rounded-lg bg-gray-950/80 border border-gray-800/80 p-2 transition">
+              <summary class="flex items-center justify-between text-cyan-400 font-bold cursor-pointer hover:text-cyan-300 select-none">
+                <span class="flex items-center gap-1.5">
+                  <i data-lucide="info" class="w-3.5 h-3.5 text-cyan-400"></i>
+                  <span>CĂN CỨ TÍNH TOÁN KỸ THUẬT</span>
+                </span>
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-500 transition-transform group-open:rotate-180"></i>
+              </summary>
+              <div class="mt-2 pt-2 border-t border-gray-800/60 space-y-1 text-gray-400 text-[11px] leading-relaxed">
+                <p>• <b>Lịch sử nhà máy:</b> Than TB 1.150 kg/ca, Vỏ điều 400 kg/ca, Ẩm sấy 1.35%</p>
+                <p>• <b>Khí tượng Cần Thơ:</b> Bù trừ nhiệt sấy theo dữ liệu 12 tháng</p>
+                <p>• <b>TCVN 5815:2018:</b> Cỡ hạt 2-4mm &gt; 90%, ẩm lưu kho &lt; 1.5%</p>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- CỘT PHẢI (BẢN BÁO CÁO CHẨN ĐOÁN & SETPOINT: TRỰC QUAN HÓA, CHỐNG RỐI MẮT, KHÔNG CẮT ĐÁY) -->
+        <div class="flex-1 min-w-0 bg-[#091120] border border-gray-800 rounded-[10px] p-3.5 flex flex-col shadow-lg h-full min-h-0 overflow-y-auto custom-scrollbar">
+          
+          <!-- TOP STATUS & SUMMARY STRIP -->
+          <div class="pb-2.5 mb-2.5 border-b border-gray-800 flex-shrink-0">
+            <div class="flex flex-wrap items-center justify-between gap-2.5">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-mono text-xs font-bold">CHUYÊN GIA</span>
+                  <h3 class="font-bold text-white text-[15px]">Bản Báo Cáo Chẩn Đoán &amp; Setpoint Vận Hành Cho Đơn Hàng Mới</h3>
+                </div>
+                <p class="text-xs text-gray-400 mt-0.5">Tính toán tối ưu: Cân bằng vật chất, dự toán nhiên liệu đốt lò &amp; setpoint chi tiết 7 trạm máy</p>
+              </div>
+
+              <div class="flex items-center gap-2 flex-wrap font-mono text-xs">
+                <span id="recFormulaBadge" class="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-400 font-bold border border-amber-500/30 text-xs">NPK 25.9.9</span>
+                <span id="recTonsBadge" class="px-2.5 py-1 rounded-lg bg-cyan-950 text-cyan-300 font-bold border border-cyan-500/30 text-xs">40 TẤN/CA 12H (80 T/24H - 3.33 T/H)</span>
+                <span id="recEutecticBadge" class="px-2.5 py-1 rounded-lg bg-red-500/20 text-red-400 font-bold border border-red-500/30 text-xs">RỦI RO CHẢY RỮA ĐẠM CAO</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- YÊU CẦU 2.2: TỐI ƯU 4 THẺ NHIÊN LIỆU (ẨN DÒNG DÀI DÒNG, CHUYỂN VÀO TOOLTIP, SỐ LỚN 24PX, BADGE ĐỊNH MỨC) -->
+          <div class="mb-3 flex-shrink-0">
+            <span class="text-[13px] font-mono text-cyan-400 font-bold block mb-2 flex items-center gap-1.5">
+              <i data-lucide="flame" class="w-4 h-4 text-amber-400"></i>
+              1. NHIÊN LIỆU ĐỐT LÒ CẦN CHUẨN BỊ (DỰ TOÁN CHO CA 12H - 1 NGÀY 2 CA):
+            </span>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5">
+              
+              <!-- Thẻ 1: Than Cám Đốt Lò -->
+              <div class="bg-gray-950 p-3 rounded-lg border border-gray-800 flex flex-col justify-between shadow-sm relative group">
+                <div class="flex items-center justify-between pb-1 border-b border-gray-900">
+                  <span class="text-gray-300 text-xs font-semibold">Than Cám Đốt Lò Sấy</span>
+                  <div class="relative cursor-help" title="Cung cấp nhiệt chính cho buồng sấy trong ca 12h">
+                    <i data-lucide="help-circle" class="w-3.5 h-3.5 text-gray-500 group-hover:text-amber-400 transition"></i>
+                  </div>
+                </div>
+                <div class="my-1.5">
+                  <span id="recThanKg" class="text-[24px] font-extrabold text-amber-400 font-mono block leading-tight tracking-tight">1,140 kg</span>
+                </div>
+                <div>
+                  <span id="recThanPerTon" class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 font-mono text-xs font-bold border border-amber-500/20 inline-block">~28.5 kg/tấn SP</span>
+                </div>
+              </div>
+
+              <!-- Thẻ 2: Vỏ Điều Phối Trộn -->
+              <div class="bg-gray-950 p-3 rounded-lg border border-gray-800 flex flex-col justify-between shadow-sm relative group">
+                <div class="flex items-center justify-between pb-1 border-b border-gray-900">
+                  <span class="text-gray-300 text-xs font-semibold">Vỏ Điều Phối Trộn</span>
+                  <div class="relative cursor-help" title="Tỷ lệ phối chuẩn: 70% Than cám + 30% Vỏ điều để giữ ngọn lửa mềm không thốc nhiệt">
+                    <i data-lucide="help-circle" class="w-3.5 h-3.5 text-gray-500 group-hover:text-purple-400 transition"></i>
+                  </div>
+                </div>
+                <div class="my-1.5">
+                  <span id="recVoDieuKg" class="text-[24px] font-extrabold text-purple-400 font-mono block leading-tight tracking-tight">460 kg</span>
+                </div>
+                <div>
+                  <span id="recVoDieuPerTon" class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 font-mono text-xs font-bold border border-purple-500/20 inline-block">~11.5 kg/tấn SP</span>
+                </div>
+              </div>
+
+              <!-- Thẻ 3: Hơi Nước Cấp Lò -->
+              <div class="bg-gray-950 p-3 rounded-lg border border-gray-800 flex flex-col justify-between shadow-sm relative group">
+                <div class="flex items-center justify-between pb-1 border-b border-gray-900">
+                  <span class="text-gray-300 text-xs font-semibold">Hơi Nước Cấp Tạo Hạt</span>
+                  <div class="relative cursor-help" title="Dẫn vào giàn phun thùng tạo hạt để làm ẩm & dẻo hạt">
+                    <i data-lucide="help-circle" class="w-3.5 h-3.5 text-gray-500 group-hover:text-cyan-400 transition"></i>
+                  </div>
+                </div>
+                <div class="my-1.5">
+                  <span id="recSteamFlow" class="text-[24px] font-extrabold text-cyan-400 font-mono block leading-tight tracking-tight">1.2 t/h</span>
+                </div>
+                <div>
+                  <span class="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 font-mono text-xs font-bold border border-cyan-500/20 inline-block">Áp suất: 0.55 MPa</span>
+                </div>
+              </div>
+
+              <!-- Thẻ 4: Tổng Nhiệt Lượng Tiêu Hao -->
+              <div class="bg-gray-950 p-3 rounded-lg border border-gray-800 flex flex-col justify-between shadow-sm relative group">
+                <div class="flex items-center justify-between pb-1 border-b border-gray-900">
+                  <span class="text-gray-300 text-xs font-semibold">Tổng Nhiệt Lượng Tiêu Hao</span>
+                  <div class="relative cursor-help" title="Mức tiêu hao năng lượng tối ưu TCVN (ca 12h)">
+                    <i data-lucide="help-circle" class="w-3.5 h-3.5 text-gray-500 group-hover:text-emerald-400 transition"></i>
+                  </div>
+                </div>
+                <div class="my-1.5">
+                  <span id="recTotalHeat" class="text-[24px] font-extrabold text-emerald-400 font-mono block leading-tight tracking-tight">7,860 Mcal</span>
+                </div>
+                <div>
+                  <span id="recHeatPerTon" class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 font-mono text-xs font-bold border border-emerald-500/20 inline-block">~196.5 Mcal/tấn SP</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- YÊU CẦU 2.3: TỐI ƯU 6 THẺ TRẠM THIẾT BỊ (NHÃN TRÁI - BADGE PHẢI, ĐƯỜNG PHÂN CÁCH MỜ, KHUYẾN NGHỊ 1 DÒNG PILL GỌN GÀNG) -->
+          <div class="mb-3 flex-shrink-0">
+            <span class="text-[13px] font-mono text-cyan-400 font-bold block mb-2 flex items-center gap-1.5">
+              <i data-lucide="settings" class="w-4 h-4 text-cyan-400"></i>
+              2. BẢNG THÔNG SỐ VẬN HÀNH CHUẨN CÀI ĐẶT CHO 7 TRẠM THIẾT BỊ:
+            </span>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              
+              <!-- Trạm 1: Phễu Nạp Liệu & Trộn Thô -->
+              <div class="bg-gray-950 p-3 rounded-lg border border-gray-800/90 flex flex-col justify-between shadow-sm">
+                <div>
+                  <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-gray-800 font-mono text-xs">
+                    <span class="font-bold text-white flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-cyan-400"></span> 1. Phễu Nạp Liệu &amp; Trộn Thô
+                    </span>
+                    <span class="text-gray-500 text-[11px]">Trạm cấp liệu</span>
+                  </div>
+                  <div class="space-y-1.5 text-xs font-mono">
+                    <div class="flex justify-between items-center py-0.5 border-b border-dashed border-white/5">
+                      <span class="text-gray-400">Độ ẩm nguyên liệu nạp:</span>
+                      <span id="spFeedMoist" class="px-2 py-0.5 rounded bg-gray-900 border border-cyan-500/30 text-cyan-300 font-bold">6.2%</span>
+                    </div>
+                    <div class="flex justify-between items-center py-0.5 border-b border-dashed border-white/5">
+                      <span class="text-gray-400">Tốc độ cấp vào máy:</span>
+                      <span id="spFeedRate" class="px-2 py-0.5 rounded bg-gray-900 border border-cyan-500/30 text-cyan-300 font-bold">3.33 t/h</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-2.5 px-2 py-1 rounded bg-amber-950/30 border border-amber-500/20 text-amber-300 text-xs font-mono flex items-center gap-1.5 truncate">
+                  <span class="text-amber-400 font-bold flex-shrink-0">👉</span>
+                  <span class="truncate">Chỉnh cân băng tải cấp đều, tránh dồn liệu nghẽn phễu.</span>
+                </div>
+              </div>
+
+              <!-- Trạm 2: Thùng Quay Tạo Hạt -->
+              <div class="bg-gray-950 p-3 rounded-lg border border-gray-800/90 flex flex-col justify-between shadow-sm">
+                <div>
+                  <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-gray-800 font-mono text-xs">
+                    <span class="font-bold text-white flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-emerald-400"></span> 2. Thùng Quay Tạo Hạt
+                    </span>
+                    <span class="text-gray-500 text-[11px]">Trạm vê viên</span>
+                  </div>
+                  <div class="space-y-1.5 text-xs font-mono">
+                    <div class="flex justify-between items-center py-0.5 border-b border-dashed border-white/5">
+                      <span class="text-gray-400">Nhiệt buồng tạo hạt:</span>
+                      <span id="spGranTemp" class="px-2 py-0.5 rounded bg-gray-900 border border-amber-500/30 text-amber-400 font-bold">52 °C</span>
+                    </div>
+                    <div class="flex justify-between items-center py-0.5 border-b border-dashed border-white/5">
+                      <span class="text-gray-400">Tốc độ quay thùng:</span>
+                      <span id="spGranSpeed" class="px-2 py-0.5 rounded bg-gray-900 border border-emerald-500/30 text-emerald-400 font-bold">9.0 - 9.8 rpm</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-2.5 px-2 py-1 rounded bg-amber-950/30 border border-amber-500/20 text-amber-300 text-xs font-mono flex items-center gap-1.5 truncate">
+                  <span class="text-amber-400 font-bold flex-shrink-0">👉</span>
+                  <span class="truncate">Giữ độ ẩm ổn định để hạt vo tròn đều, không bể hạt.</span>
+                </div>
+              </div>
+
+              <!-- Trạm 3: Lò Cấp Khí Nóng -->
+              <div class="bg-gray-950 p-3 rounded-lg border border-gray-800/90 flex flex-col justify-between shadow-sm">
+                <div>
+                  <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-gray-800 font-mono text-xs">
+                    <span class="font-bold text-white flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-amber-400"></span> 3. Lò Cấp Khí Nóng
+                    </span>
+                    <span class="text-gray-500 text-[11px]">Buồng đốt lò</span>
+                  </div>
+                  <div class="space-y-1.5 text-xs font-mono">
+                    <div class="flex justify-between items-center py-0.5 border-b border-dashed border-white/5">
+                      <span class="text-gray-400">Nhiệt buồng đốt hòa khí:</span>
+                      <span id="spFurnaceTemp" class="px-2 py-0.5 rounded bg-gray-900 border border-amber-500/30 text-amber-400 font-bold">550 - 650 °C</span>
+                    </div>
+                    <div class="flex justify-between items-center py-0.5 border-b border-dashed border-white/5">
+                      <span class="text-gray-400">Tỷ lệ đốt than / vỏ điều:</span>
+                      <span id="spFurnaceRatio" class="px-2 py-0.5 rounded bg-gray-900 border border-purple-500/30 text-purple-300 font-bold">70% Than / 30% Vỏ</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-2.5 px-2 py-1 rounded bg-amber-950/30 border border-amber-500/20 text-amber-300 text-xs font-mono flex items-center gap-1.5 truncate">
+                  <span class="text-amber-400 font-bold flex-shrink-0">👉</span>
+                  <span class="truncate">Cháy đượm, không khói đen, duy trì gió cấp ổn định.</span>
+                </div>
+              </div>
+
+              <!-- Trạm 4 & 5: Máy Sấy Thùng Quay -->
+              <div class="bg-gray-950 p-3 rounded-lg border border-gray-800/90 flex flex-col justify-between shadow-sm">
+                <div>
+                  <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-gray-800 font-mono text-xs">
+                    <span class="font-bold text-white flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-red-400"></span> 4 &amp; 5. Máy Sấy Thùng Quay
+                    </span>
+                    <span class="text-gray-500 text-[11px]">Sấy khử ẩm</span>
+                  </div>
+                  <div class="space-y-1.5 text-xs font-mono">
+                    <div class="flex justify-between items-center py-0.5 border-b border-dashed border-white/5">
+                      <span class="text-gray-400">Khí nóng thổi vào sấy:</span>
+                      <span id="recDryerInlet" class="px-2 py-0.5 rounded bg-gray-900 border border-red-500/30 text-red-400 font-bold">85 °C</span>
+                    </div>
+                    <div class="flex justify-between items-center py-0.5 border-b border-dashed border-white/5">
+                      <span class="text-gray-400">Khí hút ra ở đuôi sấy:</span>
+                      <span id="spDryerOutlet" class="px-2 py-0.5 rounded bg-gray-900 border border-amber-500/30 text-amber-400 font-bold">62 °C</span>
+                    </div>
+                    <div class="flex justify-between items-center py-0.5 border-b border-dashed border-white/5">
+                      <span class="text-gray-400">Độ ẩm hạt ra (mục tiêu):</span>
+                      <span id="recMoistureTarget" class="px-2 py-0.5 rounded bg-gray-900 border border-emerald-500/30 text-emerald-400 font-bold">1.0% - 1.2%</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-2.5 px-2 py-1 rounded bg-red-950/40 border border-red-500/30 text-red-300 text-xs font-mono flex items-center gap-1.5 truncate">
+                  <span class="text-red-400 font-bold flex-shrink-0">⚠️</span>
+                  <span class="truncate">Đạm cao tuyệt đối không để gió vào vượt 85°C.</span>
+                </div>
+              </div>
+
+              <!-- Trạm 6: Sàng Rung Phân Loại Hạt -->
+              <div class="bg-gray-950 p-3 rounded-lg border border-gray-800/90 flex flex-col justify-between shadow-sm">
+                <div>
+                  <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-gray-800 font-mono text-xs">
+                    <span class="font-bold text-white flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-purple-400"></span> 6. Sàng Rung Phân Loại Hạt
+                    </span>
+                    <span class="text-gray-500 text-[11px]">Sàng 2 tầng</span>
+                  </div>
+                  <div class="space-y-1.5 text-xs font-mono">
+                    <div class="flex justify-between items-center py-0.5 border-b border-dashed border-white/5">
+                      <span class="text-gray-400">Hạt chuẩn cỡ 2 - 4 mm:</span>
+                      <span id="spScreenTarget" class="px-2 py-0.5 rounded bg-gray-900 border border-emerald-500/30 text-emerald-400 font-bold">&gt; 92%</span>
+                    </div>
+                    <div class="flex justify-between items-center py-0.5 border-b border-dashed border-white/5">
+                      <span class="text-gray-400">Dòng hạt tuần hoàn:</span>
+                      <span class="px-2 py-0.5 rounded bg-gray-900 border border-cyan-500/30 text-cyan-300 font-bold">Nghiền - Vê lại</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-2.5 px-2 py-1 rounded bg-amber-950/30 border border-amber-500/20 text-amber-300 text-xs font-mono flex items-center gap-1.5 truncate">
+                  <span class="text-amber-400 font-bold flex-shrink-0">👉</span>
+                  <span class="truncate">Mặt lưới rung thoáng, không dính bết mắt sàng.</span>
+                </div>
+              </div>
+
+              <!-- Trạm 7: Làm Nguội & Đóng Bao -->
+              <div class="bg-gray-950 p-3 rounded-lg border border-gray-800/90 flex flex-col justify-between shadow-sm">
+                <div>
+                  <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-gray-800 font-mono text-xs">
+                    <span class="font-bold text-white flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-emerald-400"></span> 7. Làm Nguội &amp; Đóng Bao
+                    </span>
+                    <span class="text-gray-500 text-[11px]">Đóng gói SP</span>
+                  </div>
+                  <div class="space-y-1.5 text-xs font-mono">
+                    <div class="flex justify-between items-center py-0.5 border-b border-dashed border-white/5">
+                      <span class="text-gray-400">Nhiệt hạt ra đóng bao:</span>
+                      <span id="recCoolerOutlet" class="px-2 py-0.5 rounded bg-gray-900 border border-cyan-500/30 text-cyan-300 font-bold">&lt; 38 °C</span>
+                    </div>
+                    <div class="flex justify-between items-center py-0.5 border-b border-dashed border-white/5">
+                      <span class="text-gray-400">Dầu bọc áo chống vón:</span>
+                      <span id="recCoatingOil" class="px-2 py-0.5 rounded bg-gray-900 border border-gray-700 text-white font-bold">2.8 kg/t</span>
+                    </div>
+                    <div class="flex justify-between items-center py-0.5 border-b border-dashed border-white/5">
+                      <span class="text-gray-400">Bột Talc chống dính:</span>
+                      <span id="spCoatingTalc" class="px-2 py-0.5 rounded bg-gray-900 border border-gray-700 text-white font-bold">3.5 kg/t</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-2.5 px-2 py-1 rounded bg-amber-950/30 border border-amber-500/20 text-amber-300 text-xs font-mono flex items-center gap-1.5 truncate">
+                  <span class="text-amber-400 font-bold flex-shrink-0">👉</span>
+                  <span class="truncate">Làm nguội &lt;38°C trước khi vô bao tránh đọng sương.</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- YÊU CẦU 2.4: CẤU TRÚC LẠI MỤC CHỈ DẪN VẬN HÀNH QUAN TRỌNG (TIÊU ĐỀ NGUY CƠ + 3 THẺ BƯỚC HÀNH ĐỘNG NẰM NGANG) -->
+          <div class="p-3 rounded-lg bg-amber-950/20 border border-amber-500/30 text-xs flex-shrink-0 shadow-sm" id="recTechGuideContainer">
+            <!-- Dòng tiêu đề cảnh báo nguy cơ chính (in đậm màu cam/đỏ) -->
+            <div class="flex items-center gap-2 mb-2 bg-red-950/40 px-3 py-1.5 rounded-lg border border-red-500/30 text-red-300 font-mono text-[13px] font-bold">
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400 animate-pulse flex-shrink-0"></i>
+              <span id="recTechHeadline">⚠️ CẢNH BÁO NGUY CƠ: Đơn hàng hàm lượng Đạm rất cao (N &gt;= 24%), điểm eutectic cực thấp (~85-90°C), bề mặt dễ hóa dẻo dính bết!</span>
+            </div>
+
+            <!-- 3 thẻ bước hành động nằm ngang (1. Đốt lò, 2. Kiểm soát nhiệt sấy, 3. Quạt hút áp suất âm) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5" id="recTechCardsGrid">
+              <!-- Thẻ 1 -->
+              <div class="p-2.5 rounded-lg bg-gray-950/90 border border-gray-800 flex flex-col justify-between">
+                <div class="flex items-center gap-2 pb-1.5 mb-1.5 border-b border-gray-800 font-mono">
+                  <span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 font-extrabold text-xs">01</span>
+                  <span class="font-bold text-white text-xs">ĐỐT LÒ &amp; PHỐI TRỘN</span>
+                </div>
+                <p id="recActionStep1" class="text-gray-300 text-xs font-sans leading-relaxed">
+                  Đốt lò êm với tỷ lệ phối 70% Than + 30% Vỏ điều để giữ ngọn lửa mềm không thốc nhiệt cục bộ.
+                </p>
+              </div>
+
+              <!-- Thẻ 2 -->
+              <div class="p-2.5 rounded-lg bg-gray-950/90 border border-gray-800 flex flex-col justify-between">
+                <div class="flex items-center gap-2 pb-1.5 mb-1.5 border-b border-gray-800 font-mono">
+                  <span class="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-extrabold text-xs">02</span>
+                  <span class="font-bold text-white text-xs">NHIỆT KHÍ VÀO SẤY</span>
+                </div>
+                <p id="recActionStep2" class="text-gray-300 text-xs font-sans leading-relaxed">
+                  Duy trì nhiệt độ khí vào máy sấy tối đa 75-85°C; tuyệt đối không để đầu sấy vượt quá 95°C.
+                </p>
+              </div>
+
+              <!-- Thẻ 3 -->
+              <div class="p-2.5 rounded-lg bg-gray-950/90 border border-gray-800 flex flex-col justify-between">
+                <div class="flex items-center gap-2 pb-1.5 mb-1.5 border-b border-gray-800 font-mono">
+                  <span class="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-extrabold text-xs">03</span>
+                  <span class="font-bold text-white text-xs">QUẠT HÚT ÁP SUẤT ÂM</span>
+                </div>
+                <p id="recActionStep3" class="text-gray-300 text-xs font-sans leading-relaxed">
+                  Mở hết công suất quạt hút buồng sấy duy trì áp suất âm -30 đến -40 Pa để cưỡng bức bốc hơi nước.
+                </p>
+              </div>
+            </div>
+
+            <!-- Hidden compatibility holder so any legacy code referencing recTechGuide won't break -->
+            <div id="recTechGuide" class="hidden"></div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- ==================== TAB 5: DỮ LIỆU NHẬT KÝ CA ==================== -->
+    <div id="tab-data" class="tab-content hidden h-full flex flex-col min-h-0 flex-1 overflow-hidden">
+      <div class="bg-[#091120] border border-gray-800 rounded-[10px] p-3.5 flex flex-col flex-1 min-h-0 shadow-lg h-full">
+        <!-- Top Toolbar -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 mb-2.5 border-b border-gray-800 flex-shrink-0">
+          <div>
+            <h3 class="font-bold text-white text-[15px]">Bảng Nhật Ký Ca Sản Xuất (Đồng Bộ Trực Tiếp Từ Google Sheets)</h3>
+            <p class="text-xs text-gray-400 mt-0.5" id="tableRecordCountLabel">Hiển thị 102 bản ghi</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Tìm theo mã ca, công thức..." class="bg-gray-800 text-xs text-white border border-gray-700 rounded-lg px-3 py-1.5 focus:outline-none focus:border-cyan-500 w-64" />
+          </div>
+        </div>
+
+        <!-- Table Scroll Container: Tự động kéo dài sát mép đáy màn hình cách 16px, sticky header, padding 10px 12px -->
+        <div class="flex-1 min-h-0 overflow-y-auto overflow-x-auto custom-scrollbar border border-gray-800/80 rounded-lg">
+          <table class="w-full text-left text-[13px] text-gray-300">
+            <thead class="bg-gray-950 text-gray-400 uppercase font-mono text-xs sticky top-0 z-10 border-b border-gray-800">
+              <tr>
+                <th class="px-3 py-2.5">STT</th>
+                <th class="px-3 py-2.5">Mã Ca</th>
+                <th class="px-3 py-2.5">Ngày</th>
+                <th class="px-3 py-2.5">Ca</th>
+                <th class="px-3 py-2.5">Tổ SX</th>
+                <th class="px-3 py-2.5">Công Thức SP</th>
+                <th class="px-3 py-2.5 text-right">Than (kg)</th>
+                <th class="px-3 py-2.5 text-right">Trấu (kg)</th>
+                <th class="px-3 py-2.5 text-right">Vỏ Điều (kg)</th>
+                <th class="px-3 py-2.5 text-right">Tổng NL (kg)</th>
+                <th class="px-3 py-2.5">Ghi Chú</th>
+              </tr>
+            </thead>
+            <tbody id="sheetTableBody" class="divide-y divide-gray-800/60 font-mono text-[13px]">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+
+
+  </main>
+
+
+
+  <!-- JAVASCRIPT: ADVANCED THREE.JS DIGITAL TWIN ARCHITECTURE -->
+
+  <script>
+
+    let rawData = [];
+
+    let autoSyncTimer = null;
+
+    let autoSyncSeconds = 60;
+
+    let threeScene, threeCamera, threeRenderer, threeControls;
+
+    let rotatingDrums = [];
+
+    let vibratingScreenMesh = null;
+
+    let conveyorSystems = [];
+
+    let recentShiftsChart = null;
+
+    let currentShift = null;
+
+
+
+    let isPlantRunning = true;
+
+    let plantSpeedMultiplier = 1.0;
+
+
+
+    // Interactive Equipment Highlighting & Smooth Camera Lerp
+
+    let highlightSpotLight = null;
+
+    let highlightRing = null;
+
+    let isCamLerping = false;
+
+    let camTargetPos = new THREE.Vector3(0, 16, 36);
+
+    let camTargetLookAt = new THREE.Vector3(1.0, 3.2, 0);
+
+    let selectedCardIndex = null; // Start with overview & auto-rotate // Card 3 (Máy tạo hạt vê viên) starts active
+
+
+
+        function switchTab(tabId) {
+
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+
+        btn.classList.remove('bg-cyan-950/40', 'text-cyan-400', 'border-cyan-500/30');
+
+        btn.classList.add('text-gray-400', 'border-transparent');
+
+      });
+
+
+
+      const activeTab = document.getElementById(tabId);
+
+      if (activeTab) activeTab.classList.remove('hidden');
+
+
+
+      const activeNav = document.getElementById('nav-' + tabId);
+
+      if (activeNav) {
+
+        activeNav.classList.remove('text-gray-400', 'border-transparent');
+
+        activeNav.classList.add('bg-cyan-950/40', 'text-cyan-400', 'border-cyan-500/30');
+
+      }
+
+
+
+      if (tabId === 'tab-3d' && threeRenderer) {
+
+        onWindowResize();
+
+      }
+
+      if (tabId === 'tab-agent2' && currentShift && typeof syncAgent2WithCurrentShift === 'function') {
+
+        syncAgent2WithCurrentShift(currentShift);
+
+      }
+
+      lucide.createIcons();
+
+    }
+
+
+
+    window.addEventListener('DOMContentLoaded', async () => {
+
+      lucide.createIcons();
+
+      init3DPlant();
+
+
+
+      const savedKey = localStorage.getItem('gemini_api_key');
+
+      if (savedKey) {
+
+        const keyInput = document.getElementById('inputApiKey');
+
+        if (keyInput) keyInput.value = savedKey;
+
+      }
+
+
+
+      await triggerSync();
+
+      startAutoSync();
+
+      loadAgent2PhotographedShiftsList();
+
+
+
+    });
+
+
+
+    function changeAutoSync(val) {
+
+      autoSyncSeconds = parseInt(val);
+
+      startAutoSync();
+
+    }
+
+
+
+    function startAutoSync() {
+
+      if (autoSyncTimer) clearInterval(autoSyncTimer);
+
+      if (autoSyncSeconds > 0) {
+
+        autoSyncTimer = setInterval(() => triggerSync(), autoSyncSeconds * 1000);
+
+      }
+
+    }
+
+
+
+    async function triggerSync() {
+
+      const syncIcon = document.getElementById('syncIcon');
+
+      const syncText = document.getElementById('syncText');
+
+      if (syncIcon) syncIcon.classList.add('animate-spin');
+
+      if (syncText) syncText.innerText = "Đang đồng bộ...";
+
+
+
+      try {
+
+        const res = await fetch('/api/sync');
+
+        if (res.ok) {
+
+          const json = await res.json();
+
+          await loadAllData();
+
+          await loadAgent1Audit();
+
+          await loadAgent3Data();
+
+          updateRecentShiftsChart();
+
+          const nowStr = new Date().toLocaleTimeString('vi-VN');
+
+          if (syncText) syncText.innerText = `Đã đồng bộ Google Sheet (${nowStr})`;
+
+          return;
+
+        }
+
+        throw new Error("Server offline");
+
+      } catch (e) {
+
+        try {
+
+          const sheetUrl = "https://docs.google.com/spreadsheets/d/1D-9gS09nzviXf2DVle7na6spGVMH0BEAhJiVwY8m-cQ/export?format=csv&gid=0";
+
+          const res = await fetch(sheetUrl);
+
+          const csvText = await res.text();
+
+          parseAndLoadCsvDirectly(csvText);
+
+          const nowStr = new Date().toLocaleTimeString('vi-VN');
+
+          if (syncText) syncText.innerText = `Đã đồng bộ Google Sheet (${nowStr})`;
+
+        } catch (err2) {
+
+          if (syncText) syncText.innerText = "Lỗi kết nối";
+
+        }
+
+      } finally {
+
+        if (syncIcon) syncIcon.classList.remove('animate-spin');
+
+      }
+
+    }
+
+
+
+    function parseAndLoadCsvDirectly(csvText) {
+
+      const lines = csvText.trim().split('\n');
+
+      if (lines.length < 2) return;
+
+      const records = [];
+
+      for (let i = 1; i < lines.length; i++) {
+
+        if (!lines[i].trim()) continue;
+
+        const vals = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+
+        const r = {
+
+          id: i,
+
+          Ma_Ca: vals[0] || '',
+
+          Ngay: vals[1] || '',
+
+          Ca: vals[2] || '',
+
+          To_SX: vals[3] || '',
+
+          Cong_thuc_SP: vals[4] || '',
+
+          Than_kg: vals[5] ? parseFloat(vals[5]) : null,
+
+          Trau_kg: vals[6] ? parseFloat(vals[6]) : null,
+
+          Vo_Dieu_kg: vals[7] ? parseFloat(vals[7]) : null,
+
+          Ghi_chu_ca: vals[8] || ''
+
+        };
+
+        const hasFuel = (r.Than_kg !== null || r.Trau_kg !== null || r.Vo_Dieu_kg !== null);
+
+        r.Tong_Nhien_Lieu_kg = hasFuel ? ((r.Than_kg || 0) + (r.Trau_kg || 0) + (r.Vo_Dieu_kg || 0)) : null;
+
+        records.push(r);
+
+      }
+
+      rawData = records;
+
+      setupShiftPicker();
+
+      renderSheetTable();
+
+      updateRecentShiftsChart();
+
+    }
+
+
+
+    async function loadAllData() {
+
+      const res = await fetch('/api/data');
+
+      const dataObj = await res.json();
+
+      rawData = dataObj.records || [];
+
+      setupShiftPicker();
+
+      renderSheetTable();
+
+    }
+
+
+
+    function setupShiftPicker() {
+
+      const picker = document.getElementById('selectShiftPicker');
+
+      picker.innerHTML = '';
+
+      const reversed = [...rawData].reverse();
+
+      reversed.forEach((r) => {
+
+        const opt = document.createElement('option');
+
+        opt.value = r.id;
+
+        opt.innerText = `${r.Ma_Ca} — SP: ${r.Cong_thuc_SP}`;
+
+        picker.appendChild(opt);
+
+      });
+
+      if (reversed.length > 0) {
+
+        onSelectShiftChange(reversed[0].id);
+
+      }
+
+    }
+
+
+
+    function onSelectShiftChange(shiftId) {
+
+      currentShift = rawData.find(x => x.id == shiftId) || rawData[rawData.length - 1];
+
+      if (!currentShift) return;
+
+
+
+      document.getElementById('shiftFieldNgay').innerText = currentShift.Ngay || '--';
+
+      document.getElementById('shiftFieldCa').innerText = currentShift.Ca || '--';
+
+      document.getElementById('shiftFieldToSX').innerText = currentShift.To_SX || '3';
+
+      document.getElementById('shiftFieldCongThuc').innerText = `NPK ${currentShift.Cong_thuc_SP}`;
+
+
+
+      document.getElementById('shiftFieldThan').innerText = currentShift.Than_kg !== null ? `${currentShift.Than_kg} kg` : 'Chưa nhập';
+
+      document.getElementById('shiftFieldVoDieu').innerText = currentShift.Vo_Dieu_kg !== null ? `${currentShift.Vo_Dieu_kg} kg` : 'Chưa nhập';
+
+      document.getElementById('shiftFieldTrau').innerText = currentShift.Trau_kg !== null ? `${currentShift.Trau_kg} kg` : '--';
+
+
+
+      const fuelBadge = document.getElementById('shiftFuelBadge');
+
+      if (currentShift.Than_kg === null && currentShift.Trau_kg === null && currentShift.Vo_Dieu_kg === null) {
+
+        fuelBadge.innerText = "Chưa điền";
+
+        fuelBadge.className = "px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400";
+
+      } else {
+
+        fuelBadge.innerText = `Đủ (${currentShift.Tong_Nhien_Lieu_kg} kg)`;
+
+        fuelBadge.className = "px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400";
+
+      }
+
+
+
+      document.getElementById('cardMiniThan').innerText = currentShift.Than_kg !== null ? `${currentShift.Than_kg} kg` : 'Chưa nhập';
+
+      document.getElementById('cardMiniVoDieu').innerText = currentShift.Vo_Dieu_kg !== null ? `${currentShift.Vo_Dieu_kg} kg` : '--';
+
+      document.getElementById('cardMiniToSX').innerText = currentShift.To_SX || '3';
+
+      document.getElementById('cardMiniFormula').innerText = currentShift.Cong_thuc_SP;
+
+
+
+      const isHighN = currentShift.Cong_thuc_SP.startsWith('25') || currentShift.Cong_thuc_SP.startsWith('30');
+
+      document.getElementById('cardGranTemp').innerText = `Nhiệt: ${isHighN ? '54' : '65'} °C`;
+
+      document.getElementById('cardDryerInletTemp').innerText = `${isHighN ? '70' : '115'} °C`;
+
+      document.getElementById('cardDryerOutletTemp').innerText = `${isHighN ? '65' : '75'} °C`;
+
+
+
+      document.getElementById('shiftFieldGhiChu').innerText = currentShift.Ghi_chu_ca || 'Không có ghi chú đặc biệt cho ca này.';
+
+
+
+      // Synchronize Agent 2 immediately with chosen SCADA shift
+
+      if (typeof syncAgent2WithCurrentShift === 'function' && currentShift) {
+
+        syncAgent2WithCurrentShift(currentShift);
+
+      }
+
+    }
+
+
+
+    function renderSheetTable() {
+
+      const tbody = document.getElementById('sheetTableBody');
+
+      tbody.innerHTML = '';
+
+      rawData.forEach((r, idx) => {
+
+        const tr = document.createElement('tr');
+
+        tr.className = "hover:bg-gray-800/40 transition";
+
+        const hasMissing = (r.Than_kg === null && r.Trau_kg === null && r.Vo_Dieu_kg === null);
+
+        const fuelBadge = hasMissing 
+
+          ? '<span class="text-amber-400 font-bold bg-amber-950/60 px-1.5 py-0.5 rounded text-[10px]">Chưa điền</span>'
+
+          : `<span class="text-emerald-400 font-bold">${r.Tong_Nhien_Lieu_kg}</span>`;
+
+
+
+        tr.innerHTML = `
+
+          <td class="px-3 py-2.5 text-gray-500">${idx + 1}</td>
+
+          <td class="px-3 py-2.5 font-semibold text-white">${r.Ma_Ca}</td>
+
+          <td class="px-3 py-2.5 text-gray-400">${r.Ngay}</td>
+
+          <td class="px-3 py-2.5"><span class="px-2 py-0.5 rounded text-xs font-semibold ${r.Ca === 'Ngày' ? 'bg-amber-500/10 text-amber-300' : 'bg-blue-500/10 text-blue-300'}">${r.Ca}</span></td>
+
+          <td class="px-3 py-2.5 text-gray-400">${r.To_SX}</td>
+
+          <td class="px-3 py-2.5 text-cyan-300 font-semibold">${r.Cong_thuc_SP}</td>
+
+          <td class="px-3 py-2.5 text-right ${r.Than_kg ? 'text-gray-200' : 'text-gray-600'}">${r.Than_kg !== null ? r.Than_kg : '-'}</td>
+
+          <td class="px-3 py-2.5 text-right ${r.Trau_kg ? 'text-gray-200' : 'text-gray-600'}">${r.Trau_kg !== null ? r.Trau_kg : '-'}</td>
+
+          <td class="px-3 py-2.5 text-right ${r.Vo_Dieu_kg ? 'text-gray-200' : 'text-gray-600'}">${r.Vo_Dieu_kg !== null ? r.Vo_Dieu_kg : '-'}</td>
+
+          <td class="px-3 py-2.5 text-right">${fuelBadge}</td>
+
+          <td class="px-3 py-2.5 text-gray-400 text-xs">${r.Ghi_chu_ca || '-'}</td>
+
+        `;
+
+        tbody.appendChild(tr);
+
+      });
+
+    }
+
+
+
+    function updateRecentShiftsChart() {
+
+      const ctx = document.getElementById('chartRecentShifts');
+
+      if (!ctx || rawData.length === 0) return;
+
+
+
+      const recentShifts = rawData.slice(-7);
+
+      const labels = recentShifts.map(s => {
+
+        const parts = s.Ma_Ca.split('-');
+
+        if (parts.length >= 4) {
+
+          return `${parts[1]}-${parts[2]} (${parts[3]})`;
+
+        }
+
+        return s.Ma_Ca;
+
+      });
+
+
+
+      const mode = document.getElementById('selectChartMetric').value;
+
+      const legendEl = document.getElementById('chartLegendCustom');
+
+      let datasets = [];
+
+
+
+      if (mode === 'temp') {
+
+        legendEl.innerHTML = `
+
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-1 bg-amber-400 inline-block rounded"></span> Nhiệt tạo hạt (°C)</span>
+
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-1 bg-red-500 inline-block rounded"></span> Khí vào sấy (°C)</span>
+
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-1 bg-cyan-400 inline-block rounded"></span> Khí ra sấy (°C)</span>
+
+        `;
+
+        const granTemps = recentShifts.map((s, i) => s.Cong_thuc_SP.startsWith('25') ? 54 : (s.Cong_thuc_SP.startsWith('30') ? 52 : (58 + (i % 3) * 2)));
+
+        const inletTemps = recentShifts.map((s, i) => s.Cong_thuc_SP.startsWith('25') ? 70 : (s.Cong_thuc_SP.startsWith('30') ? 68 : (112 + (i % 4) * 3)));
+
+        const outletTemps = inletTemps.map(t => Math.round(t * 0.65));
+
+
+
+        datasets = [
+
+          {
+
+            label: 'Nhiệt tạo hạt (°C)',
+
+            data: granTemps,
+
+            borderColor: '#f59e0b',
+
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+
+            tension: 0.35,
+
+            borderWidth: 2.5,
+
+            pointRadius: 4,
+
+            pointHoverRadius: 6
+
+          },
+
+          {
+
+            label: 'Khí vào sấy (°C)',
+
+            data: inletTemps,
+
+            borderColor: '#ef4444',
+
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+
+            tension: 0.35,
+
+            borderWidth: 2.5,
+
+            pointRadius: 4,
+
+            pointHoverRadius: 6
+
+          },
+
+          {
+
+            label: 'Khí ra sấy (°C)',
+
+            data: outletTemps,
+
+            borderColor: '#06b6d4',
+
+            backgroundColor: 'rgba(6, 182, 212, 0.1)',
+
+            tension: 0.35,
+
+            borderWidth: 2.5,
+
+            pointRadius: 4,
+
+            pointHoverRadius: 6
+
+          }
+
+        ];
+
+      } else {
+
+        legendEl.innerHTML = `
+
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-1 bg-cyan-400 inline-block rounded"></span> Độ ẩm vào sấy (%)</span>
+
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-1 bg-emerald-400 inline-block rounded"></span> Độ ẩm ra sấy (%)</span>
+
+        `;
+
+        const moistIn = recentShifts.map((s, i) => (2.1 + (i % 3) * 0.2));
+
+        const moistOut = recentShifts.map((s, i) => (1.3 + (i % 2) * 0.2));
+
+
+
+        datasets = [
+
+          {
+
+            label: 'Độ ẩm vào sấy (%)',
+
+            data: moistIn,
+
+            borderColor: '#06b6d4',
+
+            tension: 0.35,
+
+            borderWidth: 2.5,
+
+            pointRadius: 4
+
+          },
+
+          {
+
+            label: 'Độ ẩm ra sấy (%)',
+
+            data: moistOut,
+
+            borderColor: '#10b981',
+
+            tension: 0.35,
+
+            borderWidth: 2.5,
+
+            pointRadius: 4
+
+          }
+
+        ];
+
+      }
+
+
+
+      if (recentShiftsChart) recentShiftsChart.destroy();
+
+      recentShiftsChart = new Chart(ctx, {
+
+        type: 'line',
+
+        data: { labels: labels, datasets: datasets },
+
+        options: {
+
+          responsive: true,
+
+          maintainAspectRatio: false,
+
+          plugins: {
+
+            legend: { display: false },
+
+            tooltip: {
+
+              backgroundColor: '#070e1c',
+
+              borderColor: '#1e293b',
+
+              borderWidth: 1,
+
+              titleFont: { size: 11 },
+
+              bodyFont: { size: 10 }
+
+            }
+
+          },
+
+          scales: {
+
+            x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+
+            y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(30, 41, 59, 0.7)' } }
+
+          }
+
+        }
+
+      });
+
+    }
+
+
+
+    // ==================== THREE.JS EXPERT DIGITAL TWIN ENGINE ====================
+
+    // Clean Technical SCADA Digital Twin:
+
+    // 1. Phễu nạp liệu -> 2. Băng tải -> 3. Máy vê viên -> 4. Lò đốt (cạnh vê viên) -> 5. Băng tải vào sấy -> 6. Máy sấy -> 7. Băng tải ra sấy -> 8. Sàng rây -> 9. Cụm đóng bao
+
+    const STATIONS = {
+
+      cum1: { name: "1. Phễu nạp liệu", pos: new THREE.Vector3(-15.0, 3.2, 0), cam: new THREE.Vector3(-15.0, 7.5, 12.0) },
+
+      cum2: { name: "2. Máy vê viên (tạo hạt)", pos: new THREE.Vector3(-6.8, 3.0, 0), cam: new THREE.Vector3(-6.8, 7.0, 11.5) },
+
+      cum3: { name: "3. Lò đốt nhiệt (cạnh máy vê viên)", pos: new THREE.Vector3(-6.8, 2.5, 3.4), cam: new THREE.Vector3(-6.8, 6.8, 13.5) },
+
+      cum4: { name: "4. Băng tải vào máy sấy", pos: new THREE.Vector3(-3.8, 3.0, 0), cam: new THREE.Vector3(-3.8, 6.5, 10.5) },
+
+      cum5: { name: "5. Máy sấy thùng quay", pos: new THREE.Vector3(2.0, 3.2, 0), cam: new THREE.Vector3(2.0, 8.0, 14.5) },
+
+      cum6: { name: "6. Sàng rây phân loại", pos: new THREE.Vector3(11.5, 3.2, 0), cam: new THREE.Vector3(11.5, 7.0, 11.5) },
+
+      cum7: { name: "7. Cụm đóng bao thành phẩm", pos: new THREE.Vector3(15.2, 3.5, 0), cam: new THREE.Vector3(15.2, 7.8, 12.5) }
+
+    };
+
+
+
+    // Mapping 6 KPI Cards to 3D Equipment coordinates
+
+    const STEP_EQUIPMENT_MAP = {
+
+      1: { name: "Lò đốt & Nhiên liệu cấp nhiệt", target: new THREE.Vector3(-6.8, 2.5, 3.4), cam: new THREE.Vector3(-6.8, 6.8, 13.5) },
+
+      2: { name: "Phễu nạp liệu & Cân định lượng", target: new THREE.Vector3(-15.0, 3.2, 0), cam: new THREE.Vector3(-15.0, 7.5, 12.0) },
+
+      3: { name: "Máy tạo hạt (vê viên)", target: new THREE.Vector3(-6.8, 3.0, 0), cam: new THREE.Vector3(-6.8, 7.0, 11.5) },
+
+      4: { name: "Vào máy sấy & Khí nóng cấp", target: new THREE.Vector3(-3.2, 3.2, 0), cam: new THREE.Vector3(-3.2, 6.8, 11.0) },
+
+      5: { name: "Cửa ra máy sấy", target: new THREE.Vector3(6.6, 2.4, 0), cam: new THREE.Vector3(6.6, 6.5, 11.5) },
+
+      6: { name: "Sàng rây & Cụm đóng bao", target: new THREE.Vector3(13.2, 3.5, 0), cam: new THREE.Vector3(13.2, 7.5, 13.0) }
+
+    };
+
+
+
+    let furnaceFireLight = null;
+
+
+
+    function init3DPlant() {
+
+      const container = document.getElementById('three-canvas-container');
+
+      const width = container.clientWidth;
+
+      const height = container.clientHeight;
+
+
+
+      threeScene = new THREE.Scene();
+
+      threeScene.background = new THREE.Color(0x0c1a32);
+
+      threeScene.fog = new THREE.FogExp2(0x0c1a32, 0.007);
+
+
+
+      threeCamera = new THREE.PerspectiveCamera(38, width / height, 0.1, 1500);
+
+      threeCamera.position.set(0, 15, 35);
+
+
+
+      threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+
+      threeRenderer.setSize(width, height);
+
+      threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      threeRenderer.shadowMap.enabled = true;
+
+      threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      container.appendChild(threeRenderer.domElement);
+
+
+
+      threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
+
+      threeControls.enableDamping = true;
+
+      threeControls.dampingFactor = 0.05;
+
+      threeControls.maxPolarAngle = Math.PI / 2 - 0.04;
+
+      threeControls.target.set(0.5, 2.8, 0);
+
+
+
+      // Camera auto-rotation setup
+
+      threeControls.autoRotate = true;
+
+      threeControls.autoRotateSpeed = 0.45; // Gentle slow rotation around model
+
+
+
+      // High-Clarity Industrial Lighting
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.35);
+
+      threeScene.add(ambientLight);
+
+
+
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e293b, 1.15);
+
+      hemiLight.position.set(0, 50, 0);
+
+      threeScene.add(hemiLight);
+
+
+
+      const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.8);
+
+      dirLight1.position.set(25, 40, 35);
+
+      dirLight1.castShadow = true;
+
+      dirLight1.shadow.mapSize.width = 2048;
+
+      dirLight1.shadow.mapSize.height = 2048;
+
+      threeScene.add(dirLight1);
+
+
+
+      const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.7);
+
+      dirLight2.position.set(-30, 25, -25);
+
+      threeScene.add(dirLight2);
+
+
+
+      // Floor Grid
+
+      const grid = new THREE.GridHelper(60, 60, 0x38bdf8, 0x1e3a5f);
+
+      grid.position.y = 0.02;
+
+      threeScene.add(grid);
+
+
+
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0x071120, roughness: 0.9, metalness: 0.1 });
+
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(75, 75), floorMat);
+
+      floor.rotation.x = -Math.PI / 2;
+
+      floor.receiveShadow = true;
+
+      threeScene.add(floor);
+
+
+
+      // Highlight SpotLight & Ring
+
+      highlightSpotLight = new THREE.SpotLight(0x38bdf8, 5.5, 28, Math.PI / 6, 0.35, 1.2);
+
+      highlightSpotLight.castShadow = true;
+
+      highlightSpotLight.visible = false;
+
+      threeScene.add(highlightSpotLight);
+
+      threeScene.add(highlightSpotLight.target);
+
+
+
+      const ringGeom = new THREE.RingGeometry(2.0, 2.3, 36);
+
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+
+      highlightRing = new THREE.Mesh(ringGeom, ringMat);
+
+      highlightRing.rotation.x = -Math.PI / 2;
+
+      highlightRing.position.y = 0.05;
+
+      highlightRing.visible = false;
+
+      threeScene.add(highlightRing);
+
+
+
+      // Materials library
+
+      const steelDark = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.35 });
+
+      const steelSilver = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85, roughness: 0.25 });
+
+      const paintTeal = new THREE.MeshStandardMaterial({ color: 0x0891b2, metalness: 0.45, roughness: 0.35 });
+
+      const paintYellow = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.35, roughness: 0.4 });
+
+      const paintOrange = new THREE.MeshStandardMaterial({ color: 0xea580c, metalness: 0.35, roughness: 0.35 });
+
+      const brickFurnace = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.8, metalness: 0.15 });
+
+      const rubberBelt = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9, metalness: 0.1 });
+
+
+
+      // Helper: Conveyor Belt Builder
+
+      function createConveyorBelt(startP, endP, name, particleColor) {
+
+        const group = new THREE.Group();
+
+        const dir = new THREE.Vector3().subVectors(endP, startP);
+
+        const len = dir.length();
+
+        const mid = new THREE.Vector3().addVectors(startP, endP).multiplyScalar(0.5);
+
+
+
+        // Bed frame
+
+        const bedGeom = new THREE.BoxGeometry(0.75, 0.14, len);
+
+        const bed = new THREE.Mesh(bedGeom, rubberBelt);
+
+        bed.position.copy(mid);
+
+        bed.lookAt(endP);
+
+        group.add(bed);
+
+
+
+        // Steel side rails
+
+        const railGeom = new THREE.BoxGeometry(0.05, 0.2, len);
+
+        const railL = new THREE.Mesh(railGeom, steelSilver);
+
+        railL.position.set(-0.38, 0.07, 0);
+
+        const railR = new THREE.Mesh(railGeom, steelSilver);
+
+        railR.position.set(0.38, 0.07, 0);
+
+        bed.add(railL);
+
+        bed.add(railR);
+
+
+
+        // Support leg at middle
+
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, mid.y, 8), steelDark);
+
+        leg.position.set(mid.x, mid.y / 2, mid.z);
+
+        group.add(leg);
+
+
+
+        threeScene.add(group);
+
+
+
+        // Particle dynamics along belt
+
+        const pColor = particleColor || 0x22c55e;
+
+        const pMat = new THREE.MeshStandardMaterial({ color: pColor, roughness: 0.6 });
+
+        const pGeom = new THREE.DodecahedronGeometry(0.09, 0);
+
+        const particles = [];
+
+        const numP = Math.floor(len * 4.5);
+
+        for (let i = 0; i < numP; i++) {
+
+          const pm = new THREE.Mesh(pGeom, pMat);
+
+          const prog = i / numP;
+
+          const pos = new THREE.Vector3().lerpVectors(startP, endP, prog);
+
+          pos.y += 0.16;
+
+          pos.z += (Math.random() - 0.5) * 0.3;
+
+          pm.position.copy(pos);
+
+          threeScene.add(pm);
+
+          particles.push({ mesh: pm, progress: prog, start: startP, end: endP, lateralOffset: (Math.random() - 0.5) * 0.28 });
+
+        }
+
+        conveyorSystems.push({ length: len, particles: particles });
+
+      }
+
+
+
+      // ================= 1. PHỄU NẠP LIỆU (X = -15.0, Z = 0) =================
+
+      const hopperGrp = new THREE.Group();
+
+      hopperGrp.position.set(-15.0, 0, 0);
+
+
+
+      // Support 4 structural legs
+
+      const legG = new THREE.BoxGeometry(0.16, 4.4, 0.16);
+
+      [[-1.2, -1.0], [1.2, -1.0], [-1.2, 1.0], [1.2, 1.0]].forEach(pos => {
+
+        const l = new THREE.Mesh(legG, steelDark);
+
+        l.position.set(pos[0], 2.2, pos[1]);
+
+        hopperGrp.add(l);
+
+      });
+
+
+
+      // Upper Hopper Body
+
+      const topBox = new THREE.Mesh(new THREE.BoxGeometry(2.8, 1.2, 2.4), paintYellow);
+
+      topBox.position.set(0, 4.2, 0);
+
+      hopperGrp.add(topBox);
+
+
+
+      const coneG = new THREE.CylinderGeometry(1.4, 0.32, 1.6, 4);
+
+      coneG.rotateY(Math.PI / 4);
+
+      const cone = new THREE.Mesh(coneG, paintYellow);
+
+      cone.position.set(0, 2.8, 0);
+
+      hopperGrp.add(cone);
+
+
+
+      // Raw fertilizer contents at top
+
+      const pile = new THREE.Mesh(new THREE.ConeGeometry(1.1, 0.5, 8), new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9 }));
+
+      pile.position.set(0, 4.7, 0);
+
+      hopperGrp.add(pile);
+
+
+
+      // Feed chute out to conveyor
+
+      const chute = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.8, 8), steelSilver);
+
+      chute.position.set(0.9, 1.9, 0);
+
+      chute.rotation.z = -Math.PI / 4;
+
+      hopperGrp.add(chute);
+
+
+
+      threeScene.add(hopperGrp);
+
+
+
+      // ================= 2. BĂNG TẢI: PHỄU SANG MÁY VÊ VIÊN =================
+
+      createConveyorBelt(
+
+        new THREE.Vector3(-13.8, 1.8, 0),
+
+        new THREE.Vector3(-9.2, 3.4, 0),
+
+        "Băng tải nạp",
+
+        0x64748b // Raw mineral grey
+
+      );
+
+
+
+      // ================= 3. MÁY VÊ VIÊN TẠO HẠT (X = -6.8, Z = 0) =================
+
+      const granGrp = new THREE.Group();
+
+      granGrp.position.set(-6.8, 2.6, 0);
+
+
+
+      // Granulator drum (inclined rotary cylinder)
+
+      const granDrumG = new THREE.CylinderGeometry(1.3, 1.3, 4.2, 24, 1, false);
+
+      granDrumG.rotateZ(Math.PI / 2);
+
+      const granDrum = new THREE.Mesh(granDrumG, paintTeal);
+
+      granDrum.rotation.z = -0.06; // tilt
+
+      granGrp.add(granDrum);
+
+      rotatingDrums.push(granDrum);
+
+
+
+      // Riding rings
+
+      const ringG = new THREE.TorusGeometry(1.38, 0.1, 12, 32);
+
+      ringG.rotateY(Math.PI / 2);
+
+      [-1.2, 1.2].forEach(x => {
+
+        const r = new THREE.Mesh(ringG, steelSilver);
+
+        r.position.x = x;
+
+        granDrum.add(r);
+
+      });
+
+      const granGear = new THREE.Mesh(ringG, steelDark);
+
+      granGear.position.x = 0;
+
+      granDrum.add(granGear);
+
+
+
+      // Cradle base support
+
+      const granBase = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.45, 2.0), steelDark);
+
+      granBase.position.set(0, -1.6, 0);
+
+      granGrp.add(granBase);
+
+
+
+      threeScene.add(granGrp);
+
+
+
+      // ================= 4. LÒ ĐỐT NHIỆT (CẠNH MÁY VÊ VIÊN) (X = -6.8, Z = 3.4) =================
+
+      const furnaceGrp = new THREE.Group();
+
+      furnaceGrp.position.set(-6.8, 1.9, 3.4);
+
+
+
+      // Refractory brick furnace chamber
+
+      const fBox = new THREE.Mesh(new THREE.BoxGeometry(2.8, 3.6, 2.4), brickFurnace);
+
+      furnaceGrp.add(fBox);
+
+
+
+      // Steel reinforcement corner columns
+
+      [[-1.4, -1.2], [1.4, -1.2], [-1.4, 1.2], [1.4, 1.2]].forEach(c => {
+
+        const col = new THREE.Mesh(new THREE.BoxGeometry(0.12, 3.7, 0.12), steelDark);
+
+        col.position.set(c[0], 0, c[1]);
+
+        furnaceGrp.add(col);
+
+      });
+
+
+
+      // Burner gun
+
+      const burnerGun = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.3, 0.9, 16), steelDark);
+
+      burnerGun.rotation.x = Math.PI / 2;
+
+      burnerGun.position.set(0, -0.4, 1.3);
+
+      furnaceGrp.add(burnerGun);
+
+
+
+      // Inspection window & fire glow
+
+      const win = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.1), new THREE.MeshBasicMaterial({ color: 0xff7700 }));
+
+      win.position.set(0, 0.4, 1.22);
+
+      furnaceGrp.add(win);
+
+
+
+      furnaceFireLight = new THREE.PointLight(0xff5500, 3.0, 12);
+
+      furnaceFireLight.position.set(0, 0.4, 1.3);
+
+      furnaceGrp.add(furnaceFireLight);
+
+
+
+      // HOT GAS DUCT DIRECTLY INTO DRYER INLET HEAD
+
+      const ductCurve = new THREE.CatmullRomCurve3([
+
+        new THREE.Vector3(-6.8, 3.5, 2.5),
+
+        new THREE.Vector3(-5.0, 4.0, 1.5),
+
+        new THREE.Vector3(-3.6, 3.6, 0.6),
+
+        new THREE.Vector3(-2.8, 3.4, 0)
+
+      ]);
+
+      const ductMesh = new THREE.Mesh(new THREE.TubeGeometry(ductCurve, 16, 0.36, 12, false), paintOrange);
+
+      threeScene.add(ductMesh);
+
+
+
+      threeScene.add(furnaceGrp);
+
+
+
+      // ================= 5. BĂNG TẢI ĐI VÀO MÁY SẤY =================
+
+      createConveyorBelt(
+
+        new THREE.Vector3(-4.6, 1.8, 0),
+
+        new THREE.Vector3(-2.8, 3.4, 0),
+
+        "Băng tải vào sấy",
+
+        0x10b981 // Moist green granules
+
+      );
+
+
+
+      // ================= 6. MÁY SẤY THÙNG QUAY (X = 2.0, Z = 0) =================
+
+      const dryerGrp = new THREE.Group();
+
+      dryerGrp.position.set(2.0, 3.2, 0);
+
+
+
+      // Rotary dryer cylinder: length 8.8m, diameter 3.1m
+
+      const dryerDrumG = new THREE.CylinderGeometry(1.55, 1.55, 8.8, 32, 1, false);
+
+      dryerDrumG.rotateZ(Math.PI / 2);
+
+      const dryerDrum = new THREE.Mesh(dryerDrumG, steelDark);
+
+      dryerDrum.rotation.z = -0.03; // slight slope
+
+      dryerGrp.add(dryerDrum);
+
+      rotatingDrums.push(dryerDrum);
+
+
+
+      // 2 Riding Tyres
+
+      [-2.6, 2.6].forEach(x => {
+
+        const tyre = new THREE.Mesh(new THREE.TorusGeometry(1.68, 0.14, 16, 32), steelSilver);
+
+        tyre.position.x = x;
+
+        dryerDrum.add(tyre);
+
+
+
+        // Trunnion rollers underneath
+
+        [-0.65, 0.65].forEach(z => {
+
+          const trun = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.45, 16), steelSilver);
+
+          trun.position.set(x, -1.8, z);
+
+          trun.rotation.z = Math.PI / 2;
+
+          dryerGrp.add(trun);
+
+        });
+
+      });
+
+
+
+      // Drive Ring Gear
+
+      const girthGear = new THREE.Mesh(new THREE.TorusGeometry(1.75, 0.16, 16, 32), steelSilver);
+
+      girthGear.position.x = 0;
+
+      dryerDrum.add(girthGear);
+
+
+
+      // Inlet Hood at front (relative X = -4.5 -> world X = -2.5)
+
+      const inHood = new THREE.Mesh(new THREE.BoxGeometry(1.1, 3.6, 3.4), steelDark);
+
+      inHood.position.set(-4.5, 0.1, 0);
+
+      dryerGrp.add(inHood);
+
+
+
+      // Discharge Hood at rear (relative X = 4.5 -> world X = 6.5)
+
+      const outHood = new THREE.Mesh(new THREE.BoxGeometry(1.1, 3.6, 3.4), steelDark);
+
+      outHood.position.set(4.5, 0.1, 0);
+
+      dryerGrp.add(outHood);
+
+
+
+      threeScene.add(dryerGrp);
+
+
+
+      // ================= 7. BĂNG TẢI RA MÁY SẤY =================
+
+      createConveyorBelt(
+
+        new THREE.Vector3(6.6, 1.8, 0),
+
+        new THREE.Vector3(10.0, 3.8, 0),
+
+        "Băng tải ra sấy",
+
+        0xd97706 // Dried golden-brown granules
+
+      );
+
+
+
+      // ================= 8. SÀNG RÂY (VIBRATING SCREEN) (X = 11.5, Z = 0) =================
+
+      const screenGrp = new THREE.Group();
+
+      screenGrp.position.set(11.5, 0, 0);
+
+
+
+      // 4 Heavy Structural Support Legs
+
+      [[-1.2, -0.7], [1.2, -0.7], [-1.2, 0.7], [1.2, 0.7]].forEach(p => {
+
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.6, 0.14), steelDark);
+
+        leg.position.set(p[0], 1.3, p[1]);
+
+        screenGrp.add(leg);
+
+
+
+        // Heavy helical coil spring on top of each leg
+
+        const spring = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.45, 12), steelSilver);
+
+        spring.position.set(p[0], 2.7, p[1]);
+
+        screenGrp.add(spring);
+
+      });
+
+
+
+      // Vibrating screen deck box (CHILD OF screenGrp, local position 0, 3.1, 0)
+
+      const scrBodyG = new THREE.BoxGeometry(2.8, 0.85, 1.6);
+
+      vibratingScreenMesh = new THREE.Mesh(scrBodyG, paintTeal);
+
+      vibratingScreenMesh.position.set(0, 3.1, 0);
+
+      vibratingScreenMesh.rotation.z = -0.12; // tilted for natural gravity screening
+
+      screenGrp.add(vibratingScreenMesh);
+
+
+
+      // Vibrating eccentric motor mounted directly on top of screen
+
+      const vMotor = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.6, 12), paintYellow);
+
+      vMotor.rotateZ(Math.PI / 2);
+
+      vMotor.position.set(0, 0.65, 0);
+
+      vibratingScreenMesh.add(vMotor);
+
+
+
+      // Discharge chute leading to bagging unit
+
+      const scrChute = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.8, 8), steelSilver);
+
+      scrChute.rotation.z = -Math.PI / 4;
+
+      scrChute.position.set(1.4, -0.3, 0);
+
+      vibratingScreenMesh.add(scrChute);
+
+
+
+      threeScene.add(screenGrp);
+
+
+
+      // ================= 9. CỤM ĐÓNG BAO & SILO THÀNH PHẨM (X = 15.2, Z = 0) =================
+
+      const bagGrp = new THREE.Group();
+
+      bagGrp.position.set(15.2, 0, 0);
+
+
+
+      // Silo 4 support columns
+
+      [[-1.0, -1.0], [1.0, -1.0], [-1.0, 1.0], [1.0, 1.0]].forEach(p => {
+
+        const l = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3.4, 8), steelDark);
+
+        l.position.set(p[0], 1.7, p[1]);
+
+        bagGrp.add(l);
+
+      });
+
+
+
+      // Silo bottom cone
+
+      const sCone = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 0.3, 1.2, 20), steelSilver);
+
+      sCone.position.set(0, 2.9, 0);
+
+      bagGrp.add(sCone);
+
+
+
+      // Silo cylindrical storage tank
+
+      const sTank = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 3.2, 24), steelSilver);
+
+      sTank.position.set(0, 5.1, 0);
+
+      bagGrp.add(sTank);
+
+
+
+      // Automatic bagging machine station underneath
+
+      const packMachine = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.2, 1.2), paintTeal);
+
+      packMachine.position.set(0, 1.3, 0);
+
+      bagGrp.add(packMachine);
+
+
+
+      // Bagging spout
+
+      const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.5, 12), steelSilver);
+
+      spout.position.set(0, 0.55, 0.4);
+
+      bagGrp.add(spout);
+
+
+
+      // Pallet with stacked 50kg NPK bags
+
+      const pallet = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.12, 1.4), new THREE.MeshStandardMaterial({ color: 0x854d0e, roughness: 0.9 }));
+
+      pallet.position.set(0, 0.06, 1.4);
+
+      bagGrp.add(pallet);
+
+
+
+      const bagMat1 = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.8 }); // Green bag
+
+      const bagMat2 = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.8 }); // Blue bag
+
+      for (let layer = 0; layer < 3; layer++) {
+
+        for (let b = 0; b < 2; b++) {
+
+          const bg = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 1.1), layer % 2 === 0 ? bagMat1 : bagMat2);
+
+          bg.position.set((b - 0.5) * 0.62, 0.18 + layer * 0.21, 1.4);
+
+          bagGrp.add(bg);
+
+        }
+
+      }
+
+
+
+      threeScene.add(bagGrp);
+
+
+
+      // Start animation loop
+
+      animate3D();
+
+      window.addEventListener('resize', onWindowResize, false);
+
+    }
+
+
+
+    function reset3DCamera() {
+
+      setCameraView('overview');
+
+    }
+
+
+
+    function setCameraView(preset) {
+
+      document.querySelectorAll('.cam-btn').forEach(b => {
+
+        b.classList.remove('bg-cyan-900/40', 'text-cyan-300', 'font-bold');
+
+      });
+
+      if (window.event && window.event.target) {
+
+        window.event.target.classList.add('bg-cyan-900/40', 'text-cyan-300', 'font-bold');
+
+      }
+
+
+
+      if (preset === 'overview') {
+
+        selectedCardIndex = null;
+
+        for (let i = 1; i <= 6; i++) {
+
+          const el = document.getElementById('stepCard' + i);
+
+          if (el) el.classList.remove('active');
+
+        }
+
+        if (highlightSpotLight) highlightSpotLight.visible = false;
+
+        if (highlightRing) highlightRing.visible = false;
+
+
+
+        camTargetPos.set(0, 15, 35);
+
+        camTargetLookAt.set(0.5, 2.8, 0);
+
+        isCamLerping = true;
+
+      } else if (STATIONS[preset]) {
+
+        const s = STATIONS[preset];
+
+        if (highlightSpotLight) {
+
+          highlightSpotLight.position.set(s.pos.x, s.pos.y + 10, s.pos.z + 4);
+
+          highlightSpotLight.target.position.copy(s.pos);
+
+          highlightSpotLight.visible = true;
+
+        }
+
+        if (highlightRing) {
+
+          highlightRing.position.set(s.pos.x, 0.05, s.pos.z);
+
+          highlightRing.visible = true;
+
+        }
+
+        camTargetPos.copy(s.cam);
+
+        camTargetLookAt.copy(s.pos);
+
+        isCamLerping = true;
+
+      }
+
+    }
+
+
+
+    function togglePlantOperation() {
+
+      isPlantRunning = !isPlantRunning;
+
+      const btn = document.getElementById('btnPlantPower');
+
+      const txt = document.getElementById('txtPlantPower');
+
+      if (isPlantRunning) {
+
+        if (btn) btn.className = "flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/80 hover:bg-emerald-900 text-emerald-400 border border-emerald-500/40 text-xs font-mono font-bold transition-all shadow-sm";
+
+        if (txt) txt.innerText = "DÂY CHUYỀN CHẠY";
+
+      } else {
+
+        if (btn) btn.className = "flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-950/80 hover:bg-rose-900 text-rose-400 border border-rose-500/40 text-xs font-mono font-bold transition-all shadow-sm";
+
+        if (txt) txt.innerText = "DÂY CHUYỀN DỪNG";
+
+      }
+
+    }
+
+
+
+    function changeSpeed(multiplier) {
+
+      plantSpeedMultiplier = multiplier;
+
+    }
+
+
+
+    function onStepCardClick(cardIndex) {
+
+      if (selectedCardIndex === cardIndex) {
+
+        // Toggle off - return to overview
+
+        selectedCardIndex = null;
+
+        for (let i = 1; i <= 6; i++) {
+
+          const el = document.getElementById('stepCard' + i);
+
+          if (el) el.classList.remove('active');
+
+        }
+
+        if (highlightSpotLight) highlightSpotLight.visible = false;
+
+        if (highlightRing) highlightRing.visible = false;
+
+
+
+        camTargetPos.set(0, 15, 35);
+
+        camTargetLookAt.set(0.5, 2.8, 0);
+
+        isCamLerping = true;
+
+
+
+        document.querySelectorAll('.cam-btn').forEach(b => {
+
+          b.classList.remove('bg-cyan-900/40', 'text-cyan-300', 'font-bold');
+
+        });
+
+        const ovBtn = document.getElementById('btnCamOverview');
+
+        if (ovBtn) ovBtn.classList.add('bg-cyan-900/40', 'text-cyan-300', 'font-bold');
+
+        return;
+
+      }
+
+
+
+      selectedCardIndex = cardIndex;
+
+      for (let i = 1; i <= 6; i++) {
+
+        const el = document.getElementById('stepCard' + i);
+
+        if (el) {
+
+          if (i === cardIndex) el.classList.add('active');
+
+          else el.classList.remove('active');
+
+        }
+
+      }
+
+
+
+      const info = STEP_EQUIPMENT_MAP[cardIndex];
+
+      if (info) {
+
+        if (highlightSpotLight) {
+
+          highlightSpotLight.position.set(info.target.x, info.target.y + 10, info.target.z + 4);
+
+          highlightSpotLight.target.position.copy(info.target);
+
+          highlightSpotLight.visible = true;
+
+        }
+
+        if (highlightRing) {
+
+          highlightRing.position.set(info.target.x, 0.05, info.target.z);
+
+          highlightRing.visible = true;
+
+        }
+
+
+
+        camTargetPos.copy(info.cam);
+
+        camTargetLookAt.copy(info.target);
+
+        isCamLerping = true;
+
+      }
+
+    }
+
+
+
+    // Main 3D Animation Loop with Lerp & Particle Dynamics
+
+    let animClock = 0;
+
+    function animate3D() {
+
+      requestAnimationFrame(animate3D);
+
+
+
+      const delta = 0.016 * plantSpeedMultiplier;
+
+      if (isPlantRunning) {
+
+        animClock += delta;
+
+
+
+        // 1. Rotate drum equipment (Granulator, Dryer)
+
+        rotatingDrums.forEach(d => {
+
+          d.rotation.x += 0.02 * plantSpeedMultiplier;
+
+        });
+
+
+
+        // 2. Continuous 3D Fertilizer Particles moving along conveyor belts
+
+        conveyorSystems.forEach(sys => {
+
+          sys.particles.forEach(p => {
+
+            p.progress += (0.012 / sys.length) * 12 * plantSpeedMultiplier;
+
+            if (p.progress > 1.0) p.progress -= 1.0;
+
+
+
+            const currentPos = new THREE.Vector3().lerpVectors(p.start, p.end, p.progress);
+
+            currentPos.y += 0.16;
+
+            currentPos.z += p.lateralOffset;
+
+            p.mesh.position.copy(currentPos);
+
+          });
+
+        });
+
+
+
+        // 3. Vibrating screen realistic oscillation (STAYS FIRMLY ON SPRINGS!)
+
+        if (vibratingScreenMesh) {
+
+          vibratingScreenMesh.position.y = 3.1 + Math.sin(animClock * 32) * 0.035;
+
+          vibratingScreenMesh.position.x = Math.cos(animClock * 32) * 0.025;
+
+        }
+
+
+
+        // 4. Furnace flame flicker
+
+        if (furnaceFireLight) {
+
+          furnaceFireLight.intensity = 2.6 + Math.sin(animClock * 15) * 0.5 + Math.cos(animClock * 23) * 0.3;
+
+        }
+
+
+
+        // 5. Highlight Beacon Ring Pulsing Animation
+
+        if (highlightRing && highlightRing.visible) {
+
+          const s = 1.0 + Math.sin(animClock * 6) * 0.12;
+
+          highlightRing.scale.set(s, s, s);
+
+          highlightRing.material.opacity = 0.65 + Math.sin(animClock * 6) * 0.25;
+
+        }
+
+      }
+
+
+
+      // Smooth Camera & Target Lerping
+
+      if (isCamLerping) {
+
+        threeControls.autoRotate = false;
+
+        threeCamera.position.lerp(camTargetPos, 0.08);
+
+        threeControls.target.lerp(camTargetLookAt, 0.08);
+
+        if (threeCamera.position.distanceTo(camTargetPos) < 0.08 &&
+
+            threeControls.target.distanceTo(camTargetLookAt) < 0.08) {
+
+          threeCamera.position.copy(camTargetPos);
+
+          threeControls.target.copy(camTargetLookAt);
+
+          isCamLerping = false;
+
+          if (selectedCardIndex === null) {
+
+            threeControls.autoRotate = true;
+
+          }
+
+        }
+
+      } else if (selectedCardIndex === null) {
+
+        // Continuous gentle auto-rotation when viewing the overall plant!
+
+        threeControls.autoRotate = true;
+
+      } else {
+
+        // When focused on a specific station, pause auto-rotation
+
+        threeControls.autoRotate = false;
+
+      }
+
+
+
+      threeControls.update();
+
+      threeRenderer.render(threeScene, threeCamera);
+
+    }
+
+
+
+    function onWindowResize() {
+
+      const container = document.getElementById('three-canvas-container');
+
+      if (!container || !threeCamera || !threeRenderer) return;
+
+      threeCamera.aspect = container.clientWidth / container.clientHeight;
+
+      threeCamera.updateProjectionMatrix();
+
+      threeRenderer.setSize(container.clientWidth, container.clientHeight);
+
+    }
+
+
+
+    // ==================== AGENTS 1, 2, 3, 4 LOGIC ====================
+
+    async function loadAgent1Audit() {
+
+      try {
+
+        const res = await fetch('/api/agent1/audit');
+
+        if (!res.ok) throw new Error();
+
+        const a = await res.json();
+
+        document.getElementById('agent1ScoreDisplay').innerText = `${a.completeness_score}%`;
+
+        document.getElementById('agent1ScoreSubtitle').innerText = `${a.valid_records} / ${a.total_records} ca hợp lệ hoàn toàn`;
+
+        document.getElementById('agent1TotalRecs').innerText = a.total_records;
+
+        document.getElementById('agent1MissingFuel').innerText = a.missing_fuel_count;
+
+        document.getElementById('agent1InconsistentCa').innerText = a.inconsistent_ca_count;
+
+        document.getElementById('agent1SingleShift').innerText = a.single_shift_days_count;
+
+        document.getElementById('badgeAgent1Alerts').innerText = `${a.issues_list.length} Cảnh báo`;
+
+
+
+        const listEl = document.getElementById('agent1IssuesList');
+
+        listEl.innerHTML = '';
+
+        a.issues_list.forEach(item => {
+
+          const card = document.createElement('div');
+
+          card.className = "p-3 rounded-lg bg-gray-950/80 border border-gray-800 text-[13px] space-y-1.5";
+
+          const issuesHtml = item.issues.map(iss => `
+
+            <div class="mt-1 flex items-start gap-2">
+
+              <span class="px-2 py-0.5 rounded font-bold text-xs ${iss.type === 'CRITICAL' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}">${iss.type}</span>
+
+              <div><p class="text-gray-100 text-[13px] font-medium leading-snug">${iss.detail}</p><p class="text-amber-300/80 text-xs mt-0.5 font-mono">👉 Đề xuất: ${iss.suggestion}</p></div>
+
+            </div>
+
+          `).join('');
+
+          card.innerHTML = `<div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-gray-800/60 font-mono"><span class="font-bold text-white text-[13px]">${item.Ma_Ca}</span><span class="text-gray-400 text-xs">${item.Ngay} | SP: <b class="text-cyan-400 text-[13px]">${item.Cong_thuc_SP}</b></span></div>${issuesHtml}`;
+
+          listEl.appendChild(card);
+
+        });
+
+      } catch (e) {}
+
+    }
+
+
+
+        // ==================== AGENT 2 ENHANCED ENGINE: SCADA SYNC, REAL SHEET PHOTOS & DEEP TECH EVAL ====================
+
+    let agent2PhotographedShifts = [];
+
+
+
+    // Sync Agent 2 whenever shift changes or on startup
+
+    async function syncAgent2WithCurrentShift(shift) {
+
+      if (!shift) return;
+
+      const maCa = shift.Ma_Ca || shift;
+
+      const ngay = shift.Ngay || '--';
+
+      const caName = shift.Ca || '--';
+
+      const formula = shift.Cong_thuc_SP || "NPK";
+
+      const toSx = shift.To_SX || shift["Tổ Sản Xuất"] || "3";
+
+
+
+      // Update sync badges
+
+      const badgeShift = document.getElementById('agent2SyncShiftBadge');
+
+      if (badgeShift) badgeShift.innerText = maCa;
+
+      const badgeDate = document.getElementById('agent2SyncDateBadge');
+
+      if (badgeDate) badgeDate.innerText = ngay;
+
+      const badgeCa = document.getElementById('agent2SyncCaBadge');
+
+      if (badgeCa) badgeCa.innerText = caName;
+
+      const badgeFormula = document.getElementById('agent2SyncFormulaBadge');
+
+      if (badgeFormula) badgeFormula.innerText = formula.startsWith('NPK') ? formula : `NPK ${formula}`;
+
+      const badgeTo = document.getElementById('agent2SyncToBadge');
+
+      if (badgeTo) badgeTo.innerText = toSx;
+
+
+
+      await loadAgent2Sample(maCa);
+
+    }
+
+
+
+    async function loadAgent2PhotographedShiftsList() {
+
+      try {
+
+        const res = await fetch('/api/agent2/real-images');
+
+        if (res.ok) {
+
+          const list = await res.json();
+
+          agent2PhotographedShifts = list;
+
+          const selectEl = document.getElementById('agent2PhotoShiftSelect');
+
+          if (selectEl && list.length > 0) {
+
+            selectEl.innerHTML = '<option value="current">-- Đồng bộ theo Ca SCADA đang chọn --</option>' + 
+
+              list.map(s => `<option value="${s.Ma_Ca}">📸 ${s.Ma_Ca} (${s.Cong_thuc_SP}) - Ẩm ${s.Do_am_hat_ra_say || '1.2'}%</option>`).join('');
+
+          }
+
+        }
+
+      } catch (e) {
+
+        console.error("Error loading photo shifts:", e);
+
+      }
+
+    }
+
+
+
+    // ==================== AGENT 2 LIGHTBOX / MODAL ZOOM FUNCTIONS ====================
+    function openAgent2Lightbox() {
+      const img = document.getElementById('agent2Image');
+      const title = document.getElementById('agent2SampleTitle');
+      const modal = document.getElementById('agent2LightboxModal');
+      const modalImg = document.getElementById('agent2LightboxImage');
+      const modalTitle = document.getElementById('lightboxSampleTitle');
+
+      if (modal && modalImg && img) {
+        modalImg.src = img.src;
+        if (modalTitle && title) modalTitle.innerText = title.innerText;
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeAgent2Lightbox() {
+      const modal = document.getElementById('agent2LightboxModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeAgent2Lightbox();
+    });
+
+    async function loadAgent2Sample(sampleId) {
+
+      try {
+
+        let endpoint = `/api/agent2/sample/${sampleId}`;
+
+        if (sampleId && sampleId !== 'batch_standard' && sampleId !== 'batch_high_moisture' && sampleId !== 'batch_attrition' && sampleId !== 'current') {
+
+          endpoint = `/api/agent2/shift/${encodeURIComponent(sampleId)}`;
+
+        } else if (sampleId === 'current' && currentShift) {
+
+          endpoint = `/api/agent2/shift/${encodeURIComponent(currentShift.Ma_Ca)}`;
+
+        }
+
+
+
+        const res = await fetch(endpoint);
+
+        const data = await res.json();
+
+
+
+        // Update Hero Score & Subtitle
+
+        const scoreEl = document.getElementById('agent2ScoreDisplay');
+
+        if (scoreEl) scoreEl.innerText = `${data.sphericity_index}%`;
+
+        
+
+        const statusTextEl = document.getElementById('agent2StatusText');
+
+        if (statusTextEl) statusTextEl.innerText = data.status_text || (data.status === 'PASSED' ? 'ĐẠT TIÊU CHUẨN XUẤT XƯỞNG' : 'CẢNH BÁO CHẤT LƯỢNG');
+
+
+
+        // Status badge colors
+
+        const badgeEl = document.getElementById('agent2StatusBadge');
+
+        const badgeDot = document.getElementById('agent2BadgeDot');
+
+        const badgeText = document.getElementById('agent2BadgeText');
+
+        const statusDot = document.getElementById('agent2StatusDot');
+
+        if (badgeEl && badgeText) {
+
+          badgeText.innerText = data.status || 'PASSED';
+
+          if (data.status === 'PASSED') {
+
+            badgeEl.className = "px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono font-bold flex items-center gap-1.5";
+
+            if (badgeDot) badgeDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse";
+
+            if (statusDot) statusDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+
+            if (scoreEl) scoreEl.className = "text-4xl font-black text-emerald-400 font-mono my-1";
+
+          } else if (data.status === 'WARNING') {
+
+            badgeEl.className = "px-2.5 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-mono font-bold flex items-center gap-1.5";
+
+            if (badgeDot) badgeDot.className = "w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse";
+
+            if (statusDot) statusDot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+
+            if (scoreEl) scoreEl.className = "text-4xl font-black text-amber-400 font-mono my-1";
+
+          } else {
+
+            badgeEl.className = "px-2.5 py-1 rounded bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-mono font-bold flex items-center gap-1.5";
+
+            if (badgeDot) badgeDot.className = "w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse";
+
+            if (statusDot) statusDot.className = "w-2 h-2 rounded-full bg-red-400 animate-pulse";
+
+            if (scoreEl) scoreEl.className = "text-4xl font-black text-red-400 font-mono my-1";
+
+          }
+
+        }
+
+
+
+        // Metrics breakdown
+
+        const sphEl = document.getElementById('agent2Sphericity');
+
+        if (sphEl) sphEl.innerText = `${data.sphericity_index}%`;
+
+
+
+        const stdEl = document.getElementById('agent2SizeStandard');
+
+        const stdPct = data.size_distribution["2.0 - 4.0 mm (Chuẩn xuất xưởng)"] || 0;
+
+        if (stdEl) stdEl.innerText = `${stdPct}%`;
+
+        const barStd = document.getElementById('barSizeStandard');
+
+        if (barStd) barStd.style.width = `${stdPct}%`;
+
+        const barTextStd = document.getElementById('agent2BarTextStandard');
+
+        if (barTextStd) barTextStd.innerText = `${stdPct}%`;
+
+
+
+        const overEl = document.getElementById('agent2SizeOver');
+
+        const overPct = data.size_distribution["> 4.0 mm (Quá cỡ)"] || 0;
+
+        if (overEl) overEl.innerText = `${overPct}%`;
+
+        const barOver = document.getElementById('barSizeOver');
+
+        if (barOver) barOver.style.width = `${Math.min(overPct * 3, 100)}%`;
+
+        const barTextOver = document.getElementById('agent2BarTextOver');
+
+        if (barTextOver) barTextOver.innerText = `${overPct}%`;
+
+
+
+        const underEl = document.getElementById('agent2SizeUnder');
+
+        const underPct = data.size_distribution["< 2.0 mm (Bụi / Hạt mịn)"] || 0;
+
+        if (underEl) underEl.innerText = `${underPct}%`;
+
+        const barUnder = document.getElementById('barSizeUnder');
+
+        if (barUnder) barUnder.style.width = `${Math.min(underPct * 3, 100)}%`;
+
+        const barTextUnder = document.getElementById('agent2BarTextUnder');
+
+        if (barTextUnder) barTextUnder.innerText = `${underPct}%`;
+
+
+
+        const moistEl = document.getElementById('agent2Moisture');
+
+        if (moistEl) moistEl.innerText = `${data.moisture_est_pct}%`;
+
+
+
+        const cakeEl = document.getElementById('agent2CakingRisk');
+
+        if (cakeEl) {
+
+          const riskLevel = data.caking_risk ? data.caking_risk.split(' ')[0] : 'Thấp';
+
+          cakeEl.innerText = riskLevel;
+
+          cakeEl.className = riskLevel === 'Thấp' ? "font-bold text-emerald-400" : (riskLevel === 'Trung' ? "font-bold text-amber-400" : "font-bold text-red-400");
+
+        }
+
+        const cakeDescEl = document.getElementById('agent2CakingDesc');
+
+        if (cakeDescEl) cakeDescEl.innerText = `👉 Lưu kho: ${data.caking_risk}`;
+
+
+
+        const surfaceEl = document.getElementById('agent2SurfaceQuality');
+
+        if (surfaceEl) surfaceEl.innerText = data.surface_quality;
+
+
+
+        const titleEl = document.getElementById('agent2SampleTitle');
+
+        if (titleEl) titleEl.innerText = data.photo_description || data.sample_name;
+
+
+
+        const imgEl = document.getElementById('agent2Image');
+
+        if (imgEl && data.image_url) imgEl.src = data.image_url;
+
+
+
+        // Sync header badges
+
+        if (data.ma_ca) {
+
+          const badgeShift = document.getElementById('agent2SyncShiftBadge');
+
+          if (badgeShift) badgeShift.innerText = data.ma_ca;
+
+          const badgeDate = document.getElementById('agent2SyncDateBadge');
+
+          if (badgeDate && data.ngay) badgeDate.innerText = data.ngay;
+
+          const badgeCa = document.getElementById('agent2SyncCaBadge');
+
+          if (badgeCa && data.ca) badgeCa.innerText = data.ca;
+
+          const badgeFormula = document.getElementById('agent2SyncFormulaBadge');
+
+          if (badgeFormula) badgeFormula.innerText = data.formula.startsWith('NPK') ? data.formula : `NPK ${data.formula}`;
+
+          const badgeTo = document.getElementById('agent2SyncToBadge');
+
+          if (badgeTo && data.to_sx) badgeTo.innerText = data.to_sx;
+
+        }
+
+
+
+        // Detailed Technical Evaluation Grid Update
+
+        if (data.tech_eval) {
+
+          const te = data.tech_eval;
+
+          
+
+          // Card 1: Sieve
+
+          const evalSieveStd = document.getElementById('evalSieveStd');
+
+          if (evalSieveStd) evalSieveStd.innerText = `${stdPct}%`;
+
+          const evalSieveOver = document.getElementById('evalSieveOver');
+
+          if (evalSieveOver) evalSieveOver.innerText = `${overPct}%`;
+
+          const evalSieveUnder = document.getElementById('evalSieveUnder');
+
+          if (evalSieveUnder) evalSieveUnder.innerText = `${underPct}%`;
+
+          const evalSieveDetail = document.getElementById('evalSieveDetail');
+
+          if (evalSieveDetail && te.sieve) evalSieveDetail.innerText = te.sieve.detail;
+
+          const evalSieveStatusBadge = document.getElementById('evalSieveStatusBadge');
+
+          if (evalSieveStatusBadge && te.sieve) {
+
+            evalSieveStatusBadge.innerText = te.sieve.status;
+
+            evalSieveStatusBadge.className = te.sieve.status.includes('ĐẠT') ? 'text-[10px] text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded font-bold' : 'text-[10px] text-amber-400 bg-amber-950/60 px-1.5 py-0.2 rounded font-bold';
+
+          }
+
+
+
+          // Card 2: Morphology
+
+          const evalMorphSph = document.getElementById('evalMorphSph');
+
+          if (evalMorphSph) evalMorphSph.innerText = `${data.sphericity_index}%`;
+
+          const evalMorphDensity = document.getElementById('evalMorphDensity');
+
+          if (evalMorphDensity && te.morphology) evalMorphDensity.innerText = te.morphology.density;
+
+          const evalMorphDetail = document.getElementById('evalMorphDetail');
+
+          if (evalMorphDetail && te.morphology) evalMorphDetail.innerText = te.morphology.detail;
+
+          const evalMorphStatusBadge = document.getElementById('evalMorphStatusBadge');
+
+          if (evalMorphStatusBadge && te.morphology) {
+
+            evalMorphStatusBadge.innerText = te.morphology.status;
+
+            evalMorphStatusBadge.className = te.morphology.status.includes('TỐT') ? 'text-[10px] text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded font-bold' : 'text-[10px] text-amber-400 bg-amber-950/60 px-1.5 py-0.2 rounded font-bold';
+
+          }
+
+
+
+          // Card 3: Coating
+
+          const evalCoatMoist = document.getElementById('evalCoatMoist');
+
+          if (evalCoatMoist) evalCoatMoist.innerText = `${data.moisture_est_pct}%`;
+
+          const evalCoatThreshold = document.getElementById('evalCoatThreshold');
+
+          if (evalCoatThreshold && te.coating) evalCoatThreshold.innerText = te.coating.threshold;
+
+          const evalCoatDetail = document.getElementById('evalCoatDetail');
+
+          if (evalCoatDetail && te.coating) evalCoatDetail.innerText = te.coating.detail;
+
+          const evalCoatStatusBadge = document.getElementById('evalCoatStatusBadge');
+
+          if (evalCoatStatusBadge && te.coating) {
+
+            evalCoatStatusBadge.innerText = te.coating.status;
+
+            evalCoatStatusBadge.className = te.coating.status.includes('AN TOÀN') ? 'text-[10px] text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded font-bold' : 'text-[10px] text-amber-400 bg-amber-950/60 px-1.5 py-0.2 rounded font-bold';
+
+          }
+
+
+
+          // Card 4: Operation
+
+          const evalOpGran = document.getElementById('evalOpGran');
+
+          if (evalOpGran && te.operation) evalOpGran.innerHTML = `<span class="text-cyan-400 font-bold">⚙️ Vê viên:</span> <span>${te.operation.granulator}</span>`;
+
+          const evalOpDryer = document.getElementById('evalOpDryer');
+
+          if (evalOpDryer && te.operation) evalOpDryer.innerHTML = `<span class="text-amber-400 font-bold">🔥 Sấy quay:</span> <span>${te.operation.dryer}</span>`;
+
+          const evalOpCooler = document.getElementById('evalOpCooler');
+
+          if (evalOpCooler && te.operation) evalOpCooler.innerHTML = `<span class="text-emerald-400 font-bold">❄️ Làm nguội:</span> <span>${te.operation.cooler}</span>`;
+
+
+
+          // Global tech badge
+
+          const techBadge = document.getElementById('agent2TechStatusBadge');
+
+          if (techBadge) {
+
+            techBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${data.status === 'PASSED' ? 'bg-emerald-400' : 'bg-amber-400'} animate-pulse"></span> ${data.status === 'PASSED' ? 'VẬN HÀNH ĐẠT CHUẨN' : 'CẢNH BÁO CÔNG NGHỆ'}`;
+
+            techBadge.className = data.status === 'PASSED' 
+
+              ? "px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-mono font-bold flex items-center gap-1"
+
+              : "px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-mono font-bold flex items-center gap-1";
+
+          }
+
+        }
+
+
+
+        lucide.createIcons();
+
+      } catch(e) {
+
+        console.error("Error loading Agent 2 sample:", e);
+
+      }
+
+    }
+
+
+
+    async function handleImageUpload(event) {
+
+      const file = event.target.files[0];
+
+      if (!file) return;
+
+
+
+      const reader = new FileReader();
+
+      reader.onload = async function(e) {
+
+        const base64Image = e.target.result;
+
+        const imgEl = document.getElementById('agent2Image');
+
+        if (imgEl) imgEl.src = base64Image;
+
+
+
+        const titleEl = document.getElementById('agent2SampleTitle');
+
+        if (titleEl) titleEl.innerText = `Mẫu Tải Lên: ${file.name} (Đang quét AI...)`;
+
+
+
+        try {
+
+          const res = await fetch('/api/agent2/custom-inspect', {
+
+            method: 'POST',
+
+            headers: { 'Content-Type': 'application/json' },
+
+            body: JSON.stringify({ image_url: base64Image, batch_name: file.name })
+
+          });
+
+          if (res.ok) {
+
+            const data = await res.json();
+
+            const scoreEl = document.getElementById('agent2ScoreDisplay');
+
+            if (scoreEl) scoreEl.innerText = `${data.sphericity_index}%`;
+
+            
+
+            const sphEl = document.getElementById('agent2Sphericity');
+
+            if (sphEl) sphEl.innerText = `${data.sphericity_index}%`;
+
+
+
+            const stdEl = document.getElementById('agent2SizeStandard');
+
+            const stdPct = data.size_distribution["2.0 - 4.0 mm (Chuẩn xuất xưởng)"] || 89.2;
+
+            if (stdEl) stdEl.innerText = `${stdPct}%`;
+
+            const barStd = document.getElementById('barSizeStandard');
+
+            if (barStd) barStd.style.width = `${stdPct}%`;
+
+
+
+            const surfaceEl = document.getElementById('agent2SurfaceQuality');
+
+            if (surfaceEl) surfaceEl.innerText = data.surface_quality;
+
+
+
+            if (titleEl) titleEl.innerText = `Mẫu Tải Lên: ${file.name} - Đã Phân Tích`;
+
+          }
+
+        } catch(err) {
+
+          if (titleEl) titleEl.innerText = `Mẫu Tải Lên: ${file.name}`;
+
+        }
+
+      };
+
+      reader.readAsDataURL(file);
+
+    }
+
+
+
+        // ==================== AGENT 3: 50-YEAR SENIOR FERTILIZER SPECIALIST ENGINE ====================
+
+    let agent3CurrentData = null;
+
+
+
+    
+    function onCanThoMonthChange(monthVal) {
+      const m = parseInt(monthVal) || 11;
+      const humidities = {
+        1: 78, 2: 75, 3: 74, 4: 76, 5: 82, 6: 85,
+        7: 86, 8: 87, 9: 88, 10: 86, 11: 82, 12: 79
+      };
+      const hum = humidities[m] || 80;
+      const badge = document.getElementById('canThoHumBadge');
+      if (badge) badge.innerText = `Ẩm TB: ~${hum}%`;
+
+      // Set season: dry (month 12-4) vs wet (month 5-11)
+      const seasonInput = document.getElementById('agent3SeasonSelect');
+      if (seasonInput) {
+        seasonInput.value = (m >= 5 && m <= 11) ? 'wet' : 'dry';
+      }
+
+      calculateFutureOrder();
+    }
+
+    function setAgent3Formula(formula, tons) {
+
+      const input = document.getElementById('agent3CustomFormulaInput');
+
+      if (input) input.value = formula;
+
+      const inputTons = document.getElementById('inputTargetTons');
+
+      if (inputTons && tons) {
+
+        inputTons.value = tons;
+
+        onShiftTonsChange(tons);
+
+      }
+
+      calculateFutureOrder();
+
+    }
+
+
+
+    function onCustomFormulaInput(val) {
+
+      // Keep in sync
+
+    }
+
+
+
+    function onShiftTonsChange(shiftVal) {
+      const shiftTons = parseFloat(shiftVal) || 0;
+      const tons24 = Math.round(shiftTons * 2); // 1 ngày chạy 2 ca
+      const ratePerHour = (shiftTons / 12.0).toFixed(2); // Mỗi ca 12h
+      
+      const input24h = document.getElementById('inputCapacity24h');
+      if (input24h && document.activeElement !== input24h) {
+        input24h.value = tons24;
+      }
+      const badge = document.getElementById('badgeTargetRate');
+      if (badge) badge.innerText = `~${ratePerHour} t/h`;
+    }
+
+    function on24hCapacityChange(val24h) {
+      const tons24 = parseFloat(val24h) || 0;
+      const ratePerHour = (tons24 / 24.0).toFixed(2);
+      const shiftTons = (tons24 / 2.0).toFixed(1); // 1 ngày chạy 2 ca
+      
+      const inputShift = document.getElementById('inputTargetTons');
+      if (inputShift && document.activeElement !== inputShift) {
+        inputShift.value = parseFloat(shiftTons);
+      }
+      const badge = document.getElementById('badgeTargetRate');
+      if (badge) badge.innerText = `~${ratePerHour} t/h`;
+    }
+
+    function select24hCapacity(tons24) {
+      const input24h = document.getElementById('inputCapacity24h');
+      if (input24h) input24h.value = tons24;
+      on24hCapacityChange(tons24);
+      calculateFutureOrder();
+    }
+
+    function updateThroughputBadge(tonsVal) {
+      onShiftTonsChange(tonsVal);
+    }
+
+
+
+    async function loadAgent3Data() {
+
+      const inputFormula = document.getElementById('agent3CustomFormulaInput')?.value.trim() || '25.9.9';
+
+      const inputTons = parseFloat(document.getElementById('inputTargetTons')?.value) || 40.0;
+
+      const method = document.getElementById('agent3MethodSelect')?.value || 'steam_drum';
+
+      const season = document.getElementById('agent3SeasonSelect')?.value || 'dry';
+
+
+
+      const btn = document.getElementById('btnAgent3Calculate');
+
+      if (btn) btn.innerHTML = '<span class="inline-block w-3 h-3 rounded-full bg-white animate-spin"></span> <span>Đang Tính Toán...</span>';
+
+
+
+      try {
+
+        const url = `/api/agent3/analysis?formula=${encodeURIComponent(inputFormula)}&target_tons=${inputTons}&method=${method}&season=${season}`;
+
+        const res = await fetch(url);
+
+        const data = await res.json();
+
+        agent3CurrentData = data;
+
+
+
+        // Update Header Badges
+
+        const badgeFormula = document.getElementById('recFormulaBadge');
+
+        if (badgeFormula) badgeFormula.innerText = data.formula.toUpperCase().startsWith('NPK') ? data.formula : `NPK ${data.formula}`;
+
+
+
+        const ratePerHour12h = (inputTons / 12.0).toFixed(2);
+        const tons24h = Math.round(inputTons * 2);
+
+        const badgeTons = document.getElementById('recTonsBadge');
+        if (badgeTons) {
+          badgeTons.innerText = `${inputTons} TẤN/CA 12H (${tons24h} T/24H - ${ratePerHour12h} T/H)`;
+        }
+
+
+
+        const badgeEutectic = document.getElementById('recEutecticBadge');
+
+        if (badgeEutectic) {
+
+          badgeEutectic.innerText = data.eutectic_risk;
+
+          if (data.eutectic_risk_level === 'CRITICAL') {
+
+            badgeEutectic.className = "px-2 py-1 rounded bg-red-500/20 text-red-400 font-bold border border-red-500/30 text-[11px]";
+
+          } else if (data.eutectic_risk_level === 'WARNING') {
+
+            badgeEutectic.className = "px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-bold border border-amber-500/30 text-[11px]";
+
+          } else {
+
+            badgeEutectic.className = "px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30 text-[11px]";
+
+          }
+
+        }
+
+
+
+        // Section 1: Fuel & Energy Projections
+
+        const ef = data.energy_and_fuel;
+
+        if (ef) {
+
+          const recThan = document.getElementById('recThanKg');
+
+          if (recThan) recThan.innerText = `${ef.than_kg.toLocaleString()} kg`;
+
+          const recThanPerTon = document.getElementById('recThanPerTon');
+
+          if (recThanPerTon) recThanPerTon.innerText = `~${ef.than_per_ton_kg} kg/tấn sản phẩm`;
+
+
+
+          const recVoDieu = document.getElementById('recVoDieuKg');
+
+          if (recVoDieu) recVoDieu.innerText = `${ef.vo_dieu_kg.toLocaleString()} kg`;
+
+          const recVoDieuPerTon = document.getElementById('recVoDieuPerTon');
+
+          if (recVoDieuPerTon) recVoDieuPerTon.innerText = `~${ef.vo_dieu_per_ton_kg} kg/tấn sản phẩm`;
+
+
+
+          const recSteam = document.getElementById('recSteamFlow');
+
+          const steam12hRate = (parseFloat(ratePerHour12h) * 0.36).toFixed(1);
+
+          if (recSteam) recSteam.innerText = `${steam12hRate} t/h`;
+
+
+
+          const recTotalHeat = document.getElementById('recTotalHeat');
+
+          if (recTotalHeat) recTotalHeat.innerText = `${ef.total_heat_mcal.toLocaleString()} Mcal`;
+
+          const recHeatPerTon = document.getElementById('recHeatPerTon');
+
+          if (recHeatPerTon) recHeatPerTon.innerText = `~${ef.heat_per_ton_mcal} Mcal/tấn sản phẩm`;
+
+        }
+
+
+
+        // Section 2: SCADA Station Setpoints
+
+        const sp = data.station_setpoints;
+
+        if (sp) {
+
+          if (sp.station_1_feeding) {
+
+            const feedM = document.getElementById('spFeedMoist');
+
+            if (feedM) feedM.innerText = `${sp.station_1_feeding.inlet_moisture_pct}%`;
+
+            const feedR = document.getElementById('spFeedRate');
+
+            if (feedR) feedR.innerText = `${ratePerHour12h} t/h`;
+
+          }
+
+          if (sp.station_2_granulator) {
+
+            const granT = document.getElementById('spGranTemp');
+
+            if (granT) granT.innerText = `${sp.station_2_granulator.drum_temp_c} °C`;
+
+            const granS = document.getElementById('spGranSpeed');
+
+            if (granS) granS.innerText = sp.station_2_granulator.drum_speed_rpm;
+
+          }
+
+          if (sp.station_3_furnace) {
+
+            const furT = document.getElementById('spFurnaceTemp');
+
+            if (furT) furT.innerText = sp.station_3_furnace.fire_temp_c;
+
+          }
+
+          if (sp.station_4_5_dryer) {
+
+            const dryIn = document.getElementById('recDryerInlet');
+
+            if (dryIn) dryIn.innerText = `${sp.station_4_5_dryer.dryer_inlet_temp_c} °C`;
+
+            const dryOut = document.getElementById('spDryerOutlet');
+
+            if (dryOut) dryOut.innerText = `${sp.station_4_5_dryer.dryer_outlet_temp_c} °C`;
+
+            const moistTgt = document.getElementById('recMoistureTarget');
+
+            if (moistTgt) moistTgt.innerText = sp.station_4_5_dryer.final_moisture_pct;
+
+          }
+
+          if (sp.station_6_screens) {
+
+            const scrT = document.getElementById('spScreenTarget');
+
+            if (scrT) scrT.innerText = sp.station_6_screens.target_size_2_4mm_pct;
+
+          }
+
+          if (sp.station_7_cooler_bagging) {
+
+            const coolOut = document.getElementById('recCoolerOutlet');
+
+            if (coolOut) coolOut.innerText = sp.station_7_cooler_bagging.cooler_outlet_temp_c;
+
+            const coatOil = document.getElementById('recCoatingOil');
+
+            if (coatOil) coatOil.innerText = sp.station_7_cooler_bagging.coating_oil_kg_ton;
+
+            const coatTalc = document.getElementById('spCoatingTalc');
+
+            if (coatTalc) coatTalc.innerText = sp.station_7_cooler_bagging.talc_powder_kg_ton;
+
+          }
+
+        }
+
+
+
+        // Section 3: Senior Specialist Guidelines (Cấu trúc lại thành 1 dòng cảnh báo nguy cơ + 3 thẻ bước hành động)
+        const guideEl = document.getElementById('recTechGuide');
+        let advice = data.senior_specialist_advice || '';
+        advice = advice.replace(/chuyên gia 50 năm/gi, 'CHUYÊN GIA').replace(/50 năm/gi, '');
+        if (guideEl) guideEl.innerText = advice;
+
+        const headlineEl = document.getElementById('recTechHeadline');
+        const step1El = document.getElementById('recActionStep1');
+        const step2El = document.getElementById('recActionStep2');
+        const step3El = document.getElementById('recActionStep3');
+
+        if (headlineEl) {
+          let headline = advice;
+          if (advice.includes('Bắt buộc:')) {
+            headline = advice.split('Bắt buộc:')[0].trim();
+          } else if (advice.includes('1)')) {
+            headline = advice.split('1)')[0].trim();
+          }
+          headlineEl.innerText = headline || '⚠️ CẢNH BÁO NGUY CƠ: Đơn hàng cần lưu ý kiểm soát công nghệ nhiệt sấy!';
+        }
+
+        if (advice.includes('1)')) {
+          const parts1 = advice.split('1)');
+          const parts2 = parts1[1] ? parts1[1].split('2)') : ['', ''];
+          const parts3 = parts2[1] ? parts2[1].split('3)') : ['', ''];
+
+          const s1 = parts2[0] ? parts2[0].replace(/[;.]\s*$/, '').trim() : '';
+          const s2 = parts3[0] ? parts3[0].replace(/[;.]\s*$/, '').trim() : '';
+          const s3 = parts3[1] ? parts3[1].replace(/[;.]\s*$/, '').trim() : '';
+
+          if (step1El && s1) step1El.innerText = s1;
+          if (step2El && s2) step2El.innerText = s2;
+          if (step3El && s3) step3El.innerText = s3;
+        }
+
+
+
+        lucide.createIcons();
+
+      } catch (e) {
+
+        console.error("Error running Agent 3 calculation:", e);
+
+      } finally {
+
+        if (btn) btn.innerHTML = '<i data-lucide="zap" class="w-4 h-4 text-amber-300"></i> <span>CHUYÊN GIA TÍNH TOÁN CHI TIẾT</span>';
+
+        lucide.createIcons();
+
+      }
+
+    }
+
+
+
+    function calculateFutureOrder() {
+
+      loadAgent3Data();
+
+    }
+
+
+
+    function askAgent3Prompt(promptText) {
+
+      const input = document.getElementById('agent3ConsultInput');
+
+      if (input) {
+
+        input.value = promptText;
+
+        handleAgent3ConsultSubmit(new Event('submit'));
+
+      }
+
+    }
+
+
+
+    async function handleAgent3ConsultSubmit(event) {
+
+      if (event) event.preventDefault();
+
+      const input = document.getElementById('agent3ConsultInput');
+
+      const text = input ? input.value.trim() : '';
+
+      if (!text) return;
+
+
+
+      const chatLog = document.getElementById('agent3ConsultLog');
+
+      const sendBtn = document.getElementById('btnAgent3ConsultSend');
+
+
+
+      // Append user question
+
+      const userHtml = `
+
+        <div class="flex items-start gap-2 justify-end">
+
+          <div class="bg-cyan-950/80 border border-cyan-500/30 p-2.5 rounded-xl rounded-tr-none text-cyan-100 max-w-[85%] text-xs">
+
+            <p class="font-bold text-[10px] text-cyan-400 mb-0.5">Kỹ sư / Quản đốc:</p>
+
+            <p>${text}</p>
+
+          </div>
+
+          <div class="w-6 h-6 rounded-full bg-cyan-700 flex items-center justify-center flex-shrink-0 text-white text-[10px] font-bold">KS</div>
+
+        </div>
+
+      `;
+
+      chatLog.insertAdjacentHTML('beforeend', userHtml);
+
+      input.value = '';
+
+      chatLog.scrollTop = chatLog.scrollHeight;
+
+
+
+      // Loading bubble
+
+      const loadingId = 'loading_agent3_' + Date.now();
+
+      const loadHtml = `
+
+        <div id="${loadingId}" class="flex items-start gap-2">
+
+          <div class="w-6 h-6 rounded-full bg-emerald-950 border border-emerald-500/40 flex items-center justify-center flex-shrink-0 text-emerald-400 text-[10px] font-bold">50Y</div>
+
+          <div class="bg-gray-900/90 border border-gray-800 p-2.5 rounded-xl rounded-tl-none text-gray-400 flex items-center gap-1.5 text-xs">
+
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+
+            <span>CHUYÊN GIA đang rà soát dữ liệu vận hành và tính toán khuyến nghị...</span>
+
+          </div>
+
+        </div>
+
+      `;
+
+      chatLog.insertAdjacentHTML('beforeend', loadHtml);
+
+      chatLog.scrollTop = chatLog.scrollHeight;
+
+      if (sendBtn) sendBtn.disabled = true;
+
+
+
+      try {
+
+        const formula = document.getElementById('agent3CustomFormulaInput')?.value.trim() || 'NPK';
+
+        const tons = parseFloat(document.getElementById('inputTargetTons')?.value) || 35.0;
+
+        const apiKey = localStorage.getItem('gemini_api_key') || null;
+
+
+
+        const res = await fetch('/api/agent3/consult', {
+
+          method: 'POST',
+
+          headers: { 'Content-Type': 'application/json' },
+
+          body: JSON.stringify({
+
+            question: text,
+
+            formula: formula,
+
+            target_tons: tons,
+
+            api_key: apiKey,
+
+            model: "gemini-2.5-flash"
+
+          })
+
+        });
+
+
+
+        const data = await res.json();
+
+        const loadEl = document.getElementById(loadingId);
+
+        if (loadEl) loadEl.remove();
+
+
+
+        const formattedReply = marked ? marked.parse(data.reply) : data.reply.replace(/\n/g, '<br>');
+
+
+
+        const aiMsgHtml = `
+
+          <div class="flex items-start gap-2">
+
+            <div class="w-6 h-6 rounded-full bg-emerald-950 border border-emerald-500/40 flex items-center justify-center flex-shrink-0 text-emerald-400 text-[10px] font-bold">50Y</div>
+
+            <div class="bg-gray-900/95 border border-gray-800 p-3 rounded-xl rounded-tl-none text-gray-200 max-w-[90%] leading-relaxed text-xs">
+
+              <div class="flex items-center justify-between pb-1 mb-1 border-b border-gray-800 text-[10px] text-emerald-400 font-mono">
+
+                <span class="font-bold">Kỹ Sư Trưởng (CHUYÊN GIA)</span>
+
+                <span>${data.timestamp || ''}</span>
+
+              </div>
+
+              <div class="prose prose-invert text-xs">${formattedReply}</div>
+
+            </div>
+
+          </div>
+
+        `;
+
+        chatLog.insertAdjacentHTML('beforeend', aiMsgHtml);
+
+        chatLog.scrollTop = chatLog.scrollHeight;
+
+      } catch (err) {
+
+        const loadEl = document.getElementById(loadingId);
+
+        if (loadEl) loadEl.remove();
+
+        chatLog.insertAdjacentHTML('beforeend', `<div class="p-2 rounded bg-red-950/40 text-red-400 border border-red-500/30 text-xs">Lỗi kết nối tới Chuyên Gia: ${err.message}</div>`);
+
+      } finally {
+
+        if (sendBtn) sendBtn.disabled = false;
+
+        lucide.createIcons();
+
+      }
+
+    }
+
+
+
+    
+
+  </script>
+
+</body>
+
+</html>
+
